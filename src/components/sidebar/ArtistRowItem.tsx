@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Eye, EyeOff, Star, Trash2, Route, Smile } from 'lucide-react';
 import { Artist } from '../../types';
 
@@ -58,7 +59,13 @@ export const ArtistRowItem: React.FC<ArtistRowItemProps> = ({
     e.stopPropagation();
     if (!showPicker && dotButtonRef.current) {
       const rect = dotButtonRef.current.getBoundingClientRect();
-      setPickerPos({ top: rect.bottom + 6, left: rect.left });
+      const popoverWidth = 224;
+      const margin = 10;
+      let left = rect.left;
+      if (left + popoverWidth > window.innerWidth) {
+        left = window.innerWidth - popoverWidth - margin;
+      }
+      setPickerPos({ top: rect.bottom + 6, left });
     }
     setShowPicker(prev => !prev);
   };
@@ -121,51 +128,57 @@ export const ArtistRowItem: React.FC<ArtistRowItemProps> = ({
           </button>
 
           {/* Floating Color & Icon Picker Popover */}
-          {showPicker && (
+          {showPicker && createPortal(
             <div
               ref={popoverRef}
               onClick={(e) => e.stopPropagation()}
-              className="fixed p-3 bg-slate-950/95 border border-white/10 rounded-xl shadow-2xl z-[9999] flex flex-col gap-2.5 w-60 animate-fade-in text-left text-xs"
+              className="actor-picker-popover animate-fade-in"
               style={{ top: pickerPos.top, left: pickerPos.left }}
             >
-              <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Couleur</span>
+              <div className="picker-section-header">
+                <span className="picker-section-title">Couleur</span>
+              </div>
               
               {/* Swatches Grid */}
-              <div className="flex flex-wrap gap-1.5">
-                {['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#f97316', '#ef4444', '#3b82f6', '#14b8a6'].map(color => (
+              <div className="picker-color-grid">
+                {['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#06b6d4', '#8b5cf6', '#f97316', '#ef4444', '#3b82f6', '#14b8a6', '#d946ef'].map(color => (
                   <button
                     key={color}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onUpdateColor?.(artist.id, color); setShowPicker(false); }}
-                    className="w-4 h-4 rounded-full border border-white/20 transition-transform duration-150 hover:scale-125 hover:border-white/60"
-                    style={{ backgroundColor: color }}
+                    className={`picker-color-swatch ${artist.color === color ? 'active' : ''}`}
+                    style={{ backgroundColor: color, '--swatch-color': color } as React.CSSProperties}
+                    title={color}
                   />
                 ))}
+                
                 {/* Custom Color Native Picker */}
-                <input
-                  type="color"
-                  value={artist.color}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => { e.stopPropagation(); onUpdateColor?.(artist.id, e.target.value); }}
-                  className="w-4 h-4 rounded-full border border-white/20 cursor-pointer bg-transparent"
-                  title="Couleur personnalisée"
-                />
+                <div className="picker-custom-color-btn" title="Couleur personnalisée">
+                  <input
+                    type="color"
+                    value={artist.color}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => { e.stopPropagation(); onUpdateColor?.(artist.id, e.target.value); }}
+                    className="picker-custom-color-input"
+                  />
+                  <span className="text-[10px] text-white font-bold pointer-events-none">+</span>
+                </div>
               </div>
 
-              <div className="h-px bg-white/5" />
+              <div className="picker-divider" />
 
-              <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">Icône (Rôle)</span>
+              <div className="picker-section-header">
+                <span className="picker-section-title">Icône (Rôle)</span>
+              </div>
               
               {/* Emojis Grid */}
-              <div className="grid grid-cols-6 gap-1 max-h-[100px] overflow-y-auto pr-1">
+              <div className="picker-emoji-grid">
                 {['🧔', '👩', '🧙', '🧑', '👑', '👸', '🤴', '💂', '🏇', '⚔️', '🛡️', '🏹', '🚂', '⛏️', '🔥', '🕯️', '🌟', '🐎', '🐑', '🦆', '🐕', '🕊️'].map(emoji => (
                   <button
                     key={emoji}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onUpdateIcon?.(artist.id, emoji); }}
-                    className={`p-1 text-sm rounded hover:bg-white/10 transition-all ${
-                      artist.icon === emoji ? 'bg-indigo-500/20 border border-indigo-500/40' : ''
-                    }`}
+                    className={`picker-emoji-btn ${artist.icon === emoji ? 'active' : ''}`}
                   >
                     {emoji}
                   </button>
@@ -176,11 +189,12 @@ export const ArtistRowItem: React.FC<ArtistRowItemProps> = ({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onUpdateIcon?.(artist.id, null); }}
-                className="w-full py-1 text-[10px] bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 rounded transition text-center font-bold text-slate-300 flex items-center justify-center gap-1"
+                className="picker-reset-btn"
               >
                 <Smile size={10} /> Initiales (Aa)
               </button>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
 
