@@ -34,7 +34,7 @@ interface ControlSidebarProps {
   onUpdateGroupName: (id: string, name: string) => void;
   
   // Artist Callbacks
-  onCreateArtist: (name: string, color: string) => void;
+  onCreateArtist: (name: string, color: string, icon?: string | null) => void;
   onDeleteArtist: (id: string) => void;
   onToggleArtistVisibility: (id: string) => void;
   onToggleArtistHighlight: (id: string) => void;

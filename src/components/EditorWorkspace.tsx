@@ -60,7 +60,7 @@ interface EditorWorkspaceProps {
   handleUpdateGroupColor: (id: string, color: string) => void;
   handleUpdateGroupName: (id: string, name: string) => void;
   
-  handleCreateArtist: (name: string, color: string) => void;
+  handleCreateArtist: (name: string, color: string, icon?: string | null) => void;
   handleDeleteArtist: (id: string) => void;
   handleToggleArtistVisibility: (id: string) => void;
   handleToggleArtistHighlight: (id: string) => void;

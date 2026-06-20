@@ -20,7 +20,7 @@ export function useArtistManagement({
   onRequestCreateArtist,
 }: UseArtistManagementProps) {
 
-  const handleCreateArtist = (name: string, color: string) => {
+  const handleCreateArtist = (name: string, color: string, icon?: string | null) => {
     const newArt: Artist = {
       id: 'art_' + Math.random().toString(36).substring(2, 9),
       name,
@@ -31,7 +31,8 @@ export function useArtistManagement({
       movements: [],
       onStage: true,
       entryTime: 0,
-      exitTime: project.duration
+      exitTime: project.duration,
+      icon: icon || undefined
     };
     const updatedProj = {
       ...project,
