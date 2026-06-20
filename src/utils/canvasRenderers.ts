@@ -262,7 +262,6 @@ export function drawStage({
     if (shouldDrawPath) {
       artist.movements.forEach(movement => {
         if (movement.lut.length < 2) return;
-
         // Draw the smooth path curve
         ctx.beginPath();
         ctx.moveTo(movement.lut[0].x, movement.lut[0].y);
@@ -270,14 +269,16 @@ export function drawStage({
           ctx.lineTo(movement.lut[k].x, movement.lut[k].y);
         }
 
+        const pathScale = cs ? (1 / zoom) * (project.settings?.constantScaleArtistSize ?? 1.0) : 1;
+
         if (isSelected) {
           ctx.strokeStyle = artist.color;
-          ctx.lineWidth = 4;
-          ctx.shadowBlur = 8;
+          ctx.lineWidth = 5 * pathScale;
+          ctx.shadowBlur = 8 * pathScale;
           ctx.shadowColor = artist.color;
         } else {
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2.5 * pathScale;
           ctx.shadowBlur = 0;
         }
         ctx.stroke();
@@ -294,6 +295,7 @@ export function drawStage({
           ctx.save();
           ctx.translate(pCurrent.x, pCurrent.y);
           ctx.rotate(angle);
+          ctx.scale(pathScale, pathScale);
 
           ctx.beginPath();
           ctx.moveTo(-6, -4);
@@ -316,8 +318,8 @@ export function drawStage({
               ctx.lineTo(movement.points[pIdx].x, movement.points[pIdx].y);
             }
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5 * pathScale;
+            ctx.setLineDash([4 * pathScale, 4 * pathScale]);
             ctx.stroke();
             ctx.restore();
           }
@@ -326,78 +328,33 @@ export function drawStage({
           movement.points.forEach((pt, idx) => {
             const isStart = idx === 0;
             const isEnd = idx === movement.points.length - 1;
-            const ptTime = movement.startTime + (idx / (movement.points.length - 1)) * (movement.endTime - movement.startTime);
-
             const isHovered = hoverInfo && hoverInfo.movId === movement.id && hoverInfo.pointIdx === idx;
 
             ctx.beginPath();
-            const radius = isHovered ? 7.5 : 5.5;
+            const radius = (isHovered ? 11 : 8) * pathScale;
             ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
 
             if (isStart || isEnd) {
               ctx.fillStyle = artist.color;
               ctx.strokeStyle = '#ffffff';
-              ctx.lineWidth = 2;
+              ctx.lineWidth = 2 * pathScale;
             } else {
               ctx.fillStyle = '#6366f1'; // Indigo control points
               ctx.strokeStyle = '#ffffff';
-              ctx.lineWidth = 1.5;
+              ctx.lineWidth = 1.5 * pathScale;
             }
 
             ctx.save();
             if (isHovered) {
               ctx.shadowColor = isStart || isEnd ? artist.color : '#6366f1';
-              ctx.shadowBlur = 10;
+              ctx.shadowBlur = 10 * pathScale;
             } else {
               ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-              ctx.shadowBlur = 4;
+              ctx.shadowBlur = 4 * pathScale;
             }
             ctx.fill();
             ctx.stroke();
             ctx.restore();
-
-            if (project.settings?.showMovementPointLabels !== false) {
-              const xMeters = (pt.x - stageW / 2) / 100;
-              const yMeters = (stageH / 2 - pt.y) / 100;
-
-              if (isStart || isEnd) {
-                const label = `${isStart ? 'Début' : 'Fin'} : ${ptTime.toFixed(1)}s (X: ${xMeters.toFixed(1)}m, Y: ${yMeters.toFixed(1)}m)`;
-                ctx.font = 'bold 9px Outfit';
-                const textWidth = ctx.measureText(label).width;
-                
-                const tagX = pt.x - textWidth / 2 - 6;
-                const tagY = pt.y - radius - 22;
-                const tagW = textWidth + 12;
-                const tagH = 16;
-                
-                ctx.fillStyle = 'rgba(7, 8, 10, 0.85)';
-                ctx.strokeStyle = isStart ? '#10b981' : '#ef4444'; // green border for start, red for end
-                ctx.lineWidth = 1;
-                
-                ctx.save();
-                ctx.beginPath();
-                if (ctx.roundRect) {
-                  ctx.roundRect(tagX, tagY, tagW, tagH, 4);
-                } else {
-                  ctx.rect(tagX, tagY, tagW, tagH);
-                }
-                ctx.fill();
-                ctx.stroke();
-                ctx.restore();
-                
-                ctx.fillStyle = '#f8fafc';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(label, pt.x, tagY + tagH / 2 + 1);
-              } else {
-                // Draw a tiny tag with timecode for intermediate control points
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                ctx.font = 'bold 9px Outfit';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                ctx.fillText(`${ptTime.toFixed(1)}s`, pt.x, pt.y - radius - 3);
-              }
-            }
           });
         }
       });
@@ -637,14 +594,14 @@ export function drawStage({
       ctx.font = '16px Outfit';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(artist.name, 0, 27);
+      ctx.fillText(artist.name, 0, 31);
 
       if (isSelected && project.settings?.showArtistPositions === true) {
         const liveX = (pos.x - stageW / 2) / 100;
         const liveY = (stageH / 2 - pos.y) / 100;
         ctx.fillStyle = '#a5b4fc';
         ctx.font = 'bold 12px Outfit';
-        ctx.fillText(`X: ${liveX.toFixed(2)}m, Y: ${liveY.toFixed(2)}m`, 0, 45);
+        ctx.fillText(`X: ${liveX.toFixed(2)}m, Y: ${liveY.toFixed(2)}m`, 0, 50);
       }
     } else if (isSelected && project.settings?.showArtistPositions === true) {
       const liveX = (pos.x - stageW / 2) / 100;
@@ -653,7 +610,7 @@ export function drawStage({
       ctx.font = 'bold 12px Outfit';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillText(`X: ${liveX.toFixed(2)}m, Y: ${liveY.toFixed(2)}m`, 0, 27);
+      ctx.fillText(`X: ${liveX.toFixed(2)}m, Y: ${liveY.toFixed(2)}m`, 0, 31);
     }
 
     ctx.restore(); // token scale restore
