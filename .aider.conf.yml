@@ -1,0 +1,14 @@
+# Stage-Path — Configuration Aider
+# Source unique de vérité : AGENTS.md à la racine du projet
+
+read:
+  - AGENTS.md
+  - .memo/lessons-registry.md
+
+# Compétences contextuelles — charger selon la tâche
+# .memo/skills/css-system.md          → Modification CSS
+# .memo/skills/layout-grid.md         → Modification layout
+# .memo/skills/timeline-interaction.md → Travail timeline
+# .memo/skills/canvas-rendering.md    → Travail canvas
+# .memo/skills/artist-management.md   → Travail artistes
+# .memo/skills/video-export.md        → Travail export

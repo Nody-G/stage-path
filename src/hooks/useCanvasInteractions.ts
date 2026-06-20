@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Artist, Point, Project } from '../types';
+import { Artist, Point, Project, LUTEntry } from '../types';
 import { getDistance, getArtistPositionAtTime, smoothPoints, simplifyPathRDP } from '../utils/math';
 import { wingsPadding } from '../utils/canvasRenderers';
 
@@ -549,20 +549,20 @@ export function useCanvasInteractions({
     if (activeArtistId) {
       const activeArtist = artists.find(a => a.id === activeArtistId);
       if (activeArtist) {
-        let closestLutEntry: any = null;
+        let closestLutEntry: LUTEntry | null = null;
         let closestDist = Infinity;
         let closestMovId = '';
 
-        activeArtist.movements.forEach(mov => {
-          mov.lut.forEach(entry => {
+        for (const mov of activeArtist.movements) {
+          for (const entry of mov.lut) {
             const d = getDistance(coords, entry);
             if (d < closestDist) {
               closestDist = d;
               closestLutEntry = entry;
               closestMovId = mov.id;
             }
-          });
-        });
+          }
+        }
 
         const hitTolerance = Math.max(10, 8 / zoom);
         if (closestDist < hitTolerance && closestLutEntry) {

@@ -33,7 +33,7 @@ export const useAudioWaveform = ({
         const response = await fetch(audioFileUrl);
         const arrayBuffer = await response.arrayBuffer();
         
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         const audioCtx = new AudioContextClass();
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         

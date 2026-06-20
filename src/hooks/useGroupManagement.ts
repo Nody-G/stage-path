@@ -76,10 +76,36 @@ export function useGroupManagement({
     broadcastProject(updatedProj);
   };
 
+  const handleUpdateGroupColor = (groupId: string, color: string) => {
+    const updatedGroups = project.groups.map(g => {
+      if (g.id === groupId) {
+        return { ...g, color };
+      }
+      return g;
+    });
+    const updatedProj = { ...project, groups: updatedGroups };
+    setProject(updatedProj);
+    broadcastProject(updatedProj);
+  };
+
+  const handleUpdateGroupName = (groupId: string, name: string) => {
+    const updatedGroups = project.groups.map(g => {
+      if (g.id === groupId) {
+        return { ...g, name };
+      }
+      return g;
+    });
+    const updatedProj = { ...project, groups: updatedGroups };
+    setProject(updatedProj);
+    broadcastProject(updatedProj);
+  };
+
   return {
     handleCreateGroup,
     handleDeleteGroup,
     handleToggleGroupVisibility,
     handleToggleGroupPathVisibility,
+    handleUpdateGroupColor,
+    handleUpdateGroupName,
   };
 }

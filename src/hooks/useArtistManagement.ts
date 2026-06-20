@@ -7,6 +7,7 @@ interface UseArtistManagementProps {
   activeArtistId: string | null;
   setActiveArtistId: (id: string | null) => void;
   handleSelectArtist: (id: string | null) => void;
+  onRequestCreateArtist?: (defaultName: string, defaultColor: string, position: Point) => void;
 }
 
 export function useArtistManagement({
@@ -16,6 +17,7 @@ export function useArtistManagement({
   activeArtistId,
   setActiveArtistId,
   handleSelectArtist,
+  onRequestCreateArtist,
 }: UseArtistManagementProps) {
 
   const handleCreateArtist = (name: string, color: string) => {
@@ -140,12 +142,15 @@ export function useArtistManagement({
 
   const handleDoubleClickStage = (position: Point) => {
     const defaultName = `Figurant ${project.artists.length + 1}`;
-    const name = prompt("Nom du nouvel acteur ou figurant :", defaultName);
-    if (name === null) return;
-    
     const colors = ['#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#8b5cf6', '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f97316', '#ef4444'];
-    const color = colors[project.artists.length % colors.length];
-    
+    const defaultColor = colors[project.artists.length % colors.length];
+    if (onRequestCreateArtist) {
+      onRequestCreateArtist(defaultName, defaultColor, position);
+    }
+  };
+
+  const handleConfirmCreateArtist = (name: string, color: string, position: Point) => {
+    const defaultName = `Figurant ${project.artists.length + 1}`;
     const newArt: Artist = {
       id: 'art_' + Math.random().toString(36).substring(2, 9),
       name: name.trim() || defaultName,
@@ -158,7 +163,6 @@ export function useArtistManagement({
       entryTime: 0,
       exitTime: project.duration
     };
-    
     const updatedProj = {
       ...project,
       artists: [...project.artists, newArt]
@@ -179,5 +183,6 @@ export function useArtistManagement({
     handleUpdateArtistIcon,
     handleToggleArtistGroup,
     handleDoubleClickStage,
+    handleConfirmCreateArtist,
   };
 }

@@ -164,11 +164,11 @@ export function useVideoExport(project: Project) {
     cancelRef.current = false;
 
     let encoder: VideoEncoder | null = null;
-    let fileHandle: any = null;
-    let writableStream: any = null;
+    let fileHandle: FileSystemFileHandle | null = null;
+    let writableStream: FileSystemWritableFileStream | null = null;
     let useFilePicker = false;
     let exportSuccessful = false;
-    let muxerTarget: any = null;
+    let muxerTarget: ArrayBufferTarget | FileSystemWritableFileStreamTarget | null = null;
     let suggestedFileName = '';
 
     try {
@@ -176,7 +176,7 @@ export function useVideoExport(project: Project) {
       suggestedFileName = settings.fileName.endsWith('.mp4') ? settings.fileName : `${settings.fileName}.mp4`;
       if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
         try {
-          fileHandle = await (window as any).showSaveFilePicker({
+          fileHandle = await (window as Window & { showSaveFilePicker?: (options?: object) => Promise<FileSystemFileHandle> }).showSaveFilePicker!({
             suggestedName: suggestedFileName,
             types: [{
               description: 'Vidéo MP4',
@@ -184,8 +184,9 @@ export function useVideoExport(project: Project) {
             }]
           });
           useFilePicker = true;
-        } catch (err: any) {
-          if (err.name === 'AbortError') {
+        } catch (err) {
+          const error = err as Error;
+          if (error.name === 'AbortError') {
             setIsExporting(false);
             return; // User cancelled the path selection dialog
           }
@@ -440,13 +441,14 @@ export function useVideoExport(project: Project) {
       setProgress(100);
       setIsExporting(false);
 
-    } catch (err: any) {
-      if (err.message === "EXPORT_CANCELLED") {
+    } catch (err) {
+      const error = err as Error;
+      if (error.message === "EXPORT_CANCELLED") {
         console.log("Exportation annulée par l'utilisateur.");
         setIsExporting(false);
       } else {
         console.error("Export failed:", err);
-        setExportError(err.message || "Une erreur est survenue lors de l'export.");
+        setExportError(error.message || "Une erreur est survenue lors de l'export.");
         setIsExporting(false);
       }
     } finally {

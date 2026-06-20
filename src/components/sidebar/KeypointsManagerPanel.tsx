@@ -196,9 +196,7 @@ export const KeypointsManagerPanel: React.FC<KeypointsManagerPanelProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm("Supprimer ce jalon de position ?")) {
-                          onDeleteKeypoint(activeArtist.id, kp.id);
-                        }
+                        onDeleteKeypoint(activeArtist.id, kp.id);
                       }}
                       className="p-1 rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 transition shrink-0"
                       title="Supprimer ce jalon"

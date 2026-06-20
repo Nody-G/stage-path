@@ -1,0 +1,37 @@
+---
+description: Stage-Path — Règles universelles pour toutes les interactions IA
+globs: ["src/**/*.{ts,tsx}", "*.css"]
+alwaysApply: true
+---
+
+# Stage-Path — Règles Cursor
+
+> **Source unique de vérité : `AGENTS.md` à la racine du projet.**
+> Éditez AGENTS.md pour toute modification de règles. Ce fichier est un wrapper de compatibilité.
+
+Lisez [AGENTS.md](../AGENTS.md) pour le contexte complet du projet, les règles d'architecture, les conventions de code et le protocole d'auto-amélioration.
+
+## Règles Rapides (spécifiques à Cursor)
+
+- **TypeScript strict** : aucun type `any`. Tous les types dans `src/types.ts`.
+- **Limite 400 lignes** : aucun composant ne dépasse 400 lignes. Extraire vers hooks ou sous-composants.
+- **Nommage** : `handle*` pour les fonctions, `on*` pour les props.
+- **CSS** : Vanilla CSS uniquement. Classes utilitaires mappées dans `src/index.css`. Vérifier l'existence avant utilisation.
+- **Pas de TODOs** : aucun placeholder, aucun code commenté, aucune donnée fictive.
+- **Validation** : exécuter `npm run build` après chaque modification. Zéro erreur requis.
+- **Canvas** : `StageCanvas.tsx` < 300 lignes (orchestration). Dessin dans `canvasRenderers.ts`. Interactions dans `useCanvasInteractions.ts`.
+
+## Système de Décision Contextuelle
+
+Avant chaque tâche, charger SEULEMENT la compétence nécessaire :
+
+| Tâche | Fichier à lire |
+|---|---|
+| Modification CSS | `.memo/skills/css-system.md` |
+| Modification layout | `.memo/skills/layout-grid.md` |
+| Travail timeline | `.memo/skills/timeline-interaction.md` |
+| Travail canvas | `.memo/skills/canvas-rendering.md` |
+| Travail artistes | `.memo/skills/artist-management.md` |
+| Travail export | `.memo/skills/video-export.md` |
+
+Toujours consulter `.memo/lessons-registry.md` pour les erreurs connues.

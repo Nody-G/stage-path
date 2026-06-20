@@ -1,59 +1,107 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Users, Move, Palette, Settings, Video, Plus, PanelRightOpen, PanelRightClose } from 'lucide-react';
 import { translations, Lang } from '../utils/i18n';
+
+type SidebarTab = 'casting' | 'movements' | 'scenography' | 'options' | 'export';
 
 interface HeaderPanelProps {
   projectName: string;
   onRenameProject: (newName: string) => void;
   onBackToDashboard: () => void;
   lang: Lang;
+  activeTab: SidebarTab;
+  onTabChange: (tab: SidebarTab) => void;
+  onAddArtist: (name: string, color: string) => void;
+  isSidebarOpen: boolean;
+  onToggleSidebar: () => void;
 }
+
+const TAB_CONFIG: { key: SidebarTab; icon: React.ElementType; labelKey: string }[] = [
+  { key: 'casting', icon: Users, labelKey: 'tabCasting' },
+  { key: 'movements', icon: Move, labelKey: 'tabMovements' },
+  { key: 'scenography', icon: Palette, labelKey: 'tabScenography' },
+  { key: 'export', icon: Video, labelKey: 'tabExport' },
+  { key: 'options', icon: Settings, labelKey: 'tabOptions' },
+];
 
 export const HeaderPanel: React.FC<HeaderPanelProps> = ({
   projectName,
   onRenameProject,
   onBackToDashboard,
   lang,
+  activeTab,
+  onTabChange,
+  onAddArtist,
+  isSidebarOpen,
+  onToggleSidebar,
 }) => {
   const t = (key: keyof typeof translations['fr']) => {
     return translations[lang][key] || translations['fr'][key] || key;
   };
 
+  const handleAddArtist = () => {
+    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#8b5cf6', '#f97316'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    onAddArtist('Acteur', color);
+  };
+
   return (
-    <header className="glass-panel mx-4 mt-3 flex items-center justify-between px-6 rounded-xl shrink-0 h-[56px] border border-white/5 bg-slate-900/40">
-      {/* Left section: Dashboard link */}
-      <div className="flex-1 flex justify-start">
+    <header className="app-header-bar flex items-center h-[48px] px-3 gap-2 shrink-0 border-b border-white/5 bg-slate-950/80">
+      {/* Left: Back + Logo + Project name */}
+      <div className="flex items-center gap-2 shrink-0">
         <button 
           onClick={onBackToDashboard}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-slate-300 hover:text-white text-[11px] font-semibold transition-all duration-200"
+          className="header-icon-btn"
           title={t('dashboard')}
         >
-          <ArrowLeft size={13} /> {t('dashboard')}
+          <ArrowLeft size={15} />
         </button>
-      </div>
 
-      {/* Center section: Logo + Application Name + Separator + Project Title Input */}
-      <div className="flex-initial flex items-center gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-xl select-none filter drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]">🎭</span>
-          <div>
-            <h1 className="text-sm font-bold leading-none tracking-tight bg-gradient-to-r from-indigo-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #06b6d4 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>StagePath</h1>
-            <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t('spatiotemporalPlanning')}</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-base select-none">🎭</span>
+          <input 
+            type="text" 
+            value={projectName}
+            onChange={(e) => onRenameProject(e.target.value)}
+            className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-indigo-500 focus:outline-none transition-all px-1 py-0.5 font-semibold text-[11px] text-slate-200 max-w-[160px]"
+            title={t('renameProject')}
+          />
         </div>
 
-        <div className="h-5 w-px bg-white/10" />
-
-        <input 
-          type="text" 
-          value={projectName}
-          onChange={(e) => onRenameProject(e.target.value)}
-          className="bg-transparent border-b border-transparent hover:border-white/20 focus:border-indigo-500 focus:outline-none transition-all px-2 py-1 font-semibold text-xs text-slate-100 max-w-[200px] text-center"
-          title={t('renameProject')}
-        />
+        <div className="h-4 w-px bg-white/10 mx-1" />
       </div>
 
-      {/* Right section: Empty spacer to balance the layout and keep the center section perfectly centered */}
-      <div className="flex-1 flex justify-end" />
+      {/* Center: Tabs */}
+      <nav className="flex-1 flex items-center justify-center gap-0.5">
+        {TAB_CONFIG.map(({ key, icon: Icon, labelKey }) => (
+          <button
+            key={key}
+            onClick={() => onTabChange(key)}
+            className={`header-tab ${activeTab === key ? 'header-tab-active' : ''}`}
+            title={t(labelKey as keyof typeof translations['fr'])}
+          >
+            <Icon size={13} />
+            <span>{t(labelKey as keyof typeof translations['fr'])}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* Right: Add Artist + Toggle Sidebar */}
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={handleAddArtist}
+          className="header-icon-btn header-add-btn"
+          title="Ajouter un acteur"
+        >
+          <Plus size={15} />
+        </button>
+        <button
+          onClick={onToggleSidebar}
+          className="header-icon-btn"
+          title={isSidebarOpen ? "Fermer le panneau" : "Ouvrir le panneau"}
+        >
+          {isSidebarOpen ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+        </button>
+      </div>
     </header>
   );
 };

@@ -148,9 +148,7 @@ export const ArtistEditPanel: React.FC<ArtistEditPanelProps> = ({
         <button
           type="button"
           onClick={() => {
-            if (confirm(`Supprimer définitivement le figurant ${activeArtist.name} ?`)) {
-              onDeleteArtist(activeArtist.id);
-            }
+            onDeleteArtist(activeArtist.id);
           }}
           className="p-1.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/40 transition"
           title="Supprimer définitivement"

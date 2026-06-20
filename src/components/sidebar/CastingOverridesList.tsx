@@ -1,6 +1,6 @@
 import React from 'react';
 import { Route } from 'lucide-react';
-import { Project } from '../../types';
+import { Project, Group } from '../../types';
 import { ExportSettings, ArtistVisibility } from '../../hooks/useVideoExport';
 
 interface CastingOverridesListProps {
@@ -18,7 +18,7 @@ export const CastingOverridesList: React.FC<CastingOverridesListProps> = ({
   isExporting,
   onArtistOverrideChange,
 }) => {
-  const renderExportGroupTree = (group: any, depth = 0) => {
+  const renderExportGroupTree = (group: Group, depth = 0) => {
     const groupArtists = project.artists.filter(a => a.groupIds.includes(group.id));
     const childGroups = project.groups.filter(g => g.parentId === group.id);
     
@@ -51,7 +51,7 @@ export const CastingOverridesList: React.FC<CastingOverridesListProps> = ({
         {/* Group header row */}
         <div className="flex items-center justify-between py-1 border-b border-white/5 last:border-0">
           <div className="flex items-center gap-1.5 truncate mr-2">
-            <span className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_4px_var(--color)]" style={{ backgroundColor: group.color, ['--color' as any]: group.color }} />
+            <span className="w-2 h-2 rounded-full shrink-0 shadow-[0_0_4px_var(--color)]" style={{ backgroundColor: group.color, '--color': group.color } as React.CSSProperties} />
             <span className="text-slate-350 font-bold truncate text-[11px]">{group.name}</span>
           </div>
           
@@ -138,7 +138,7 @@ export const CastingOverridesList: React.FC<CastingOverridesListProps> = ({
                     ) : (
                       <span 
                         className="w-2.5 h-2.5 rounded-full shrink-0 shadow-[0_0_6px_var(--color)]" 
-                        style={{ backgroundColor: artist.color, ['--color' as any]: artist.color }} 
+                        style={{ backgroundColor: artist.color, '--color': artist.color } as React.CSSProperties} 
                       />
                     )}
                     <span className="text-slate-300 font-medium truncate text-[11px]">{artist.name}</span>
@@ -240,7 +240,7 @@ export const CastingOverridesList: React.FC<CastingOverridesListProps> = ({
                   ) : (
                     <span 
                       className="w-2.5 h-2.5 rounded-full shrink-0 shadow-[0_0_6px_var(--color)]" 
-                      style={{ backgroundColor: artist.color, ['--color' as any]: artist.color }} 
+                      style={{ backgroundColor: artist.color, '--color': artist.color } as React.CSSProperties} 
                     />
                   )}
                   <span className="text-slate-300 font-medium truncate text-[11px]">{artist.name}</span>

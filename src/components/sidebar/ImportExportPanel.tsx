@@ -4,7 +4,7 @@ import { Upload, Download } from 'lucide-react';
 interface ImportExportPanelProps {
   onImportProject: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onExportProject: () => void;
-  t: (key: any) => string;
+  t: (key: string) => string;
 }
 
 export const ImportExportPanel: React.FC<ImportExportPanelProps> = ({

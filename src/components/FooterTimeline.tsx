@@ -15,8 +15,8 @@ interface FooterTimelineProps {
   audioFileName: string | null;
   audioFileUrl: string | null;
   audioDuration: number;
-  timelineMode: 'full' | 'compact' | 'collapsed';
-  onSetMode: (mode: 'full' | 'compact' | 'collapsed') => void;
+  timelineHeight: number;
+  onTimelineResize: (height: number) => void;
   onTimelineScrub: (time: number) => void;
   onUpdateMovementTimeRange: (artistId: string, movementId: string, newStart: number, newEnd: number) => void;
   formatTime: (time: number) => string;
@@ -34,15 +34,43 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
   audioFileName,
   audioFileUrl,
   audioDuration,
-  timelineMode,
-  onSetMode,
+  timelineHeight,
+  onTimelineResize,
   onTimelineScrub,
   onUpdateMovementTimeRange,
   formatTime,
-  onUpdateDuration,
+  onUpdateDuration: _onUpdateDuration,
 }) => {
   const [timelineZoom, setTimelineZoom] = useState<number>(1);
   const timelineTracksRef = React.useRef<HTMLDivElement | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const newHeight = window.innerHeight - e.clientY;
+      const clamped = Math.min(Math.max(newHeight, 60), 500);
+      onTimelineResize(clamped);
+    };
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      localStorage.setItem("stage_path_timeline_height", timelineHeight.toString());
+      document.body.style.cursor = "";
+    };
+    document.body.style.cursor = "row-resize";
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, timelineHeight]);
+
   const t = translations[lang];
 
   // Scroll wheel horizontal zoom centered on mouse cursor
@@ -123,24 +151,21 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
     const clickPercent = Math.max(0, Math.min(1, clickX / trackWidth));
     onTimelineScrub(clickPercent * duration);
   };
-
-  // If collapsed, render only a thin handle/bar to restore it
-  if (timelineMode === 'collapsed') {
-    return (
-      <footer 
-        onClick={() => onSetMode('compact')}
-        className="timeline-collapsed-handle mx-4 mb-2 animate-pulse"
-        title={lang === 'fr' ? "Cliquer pour afficher la timeline" : "Click to show timeline"}
-      >
-        <div className="w-16 h-1 rounded-full bg-slate-500" />
-      </footer>
-    );
-  }
-
   return (
-    <footer className={`footer-timeline flex flex-col justify-between border-t border-white/5 shrink-0 select-none transition-all duration-300 w-full bg-slate-950/40 ${
-      timelineMode === 'compact' ? 'h-[74px] gap-0' : 'h-[210px] gap-0'
-    }`}>
+    <footer 
+      className="footer-timeline flex flex-col justify-between border-t border-white/5 shrink-0 select-none w-full bg-slate-950/40"
+      style={{ height: `${timelineHeight}px`, transition: isResizing ? "none" : "height 0.2s ease" }}
+    >
+      {/* Resize handle at top */}
+      <div
+        onMouseDown={handleResizeMouseDown}
+        className={`w-full h-1.5 cursor-row-resize flex items-center justify-center shrink-0 transition-colors duration-150 ${
+          isResizing ? "bg-indigo-500" : "hover:bg-indigo-500/30"
+        }`}
+        title="Faites glisser pour redimensionner"
+      >
+        <div className="w-10 h-0.5 rounded-full bg-slate-600" />
+      </div>
       <div className="flex items-center gap-4 px-4 py-2 border-b border-white/5 w-full bg-slate-950/10 h-[46px]">
         {/* Time display on the left */}
         <span 
@@ -152,7 +177,7 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
           <span>{formatTime(duration)}</span>
         </span>
         
-        {/* Custom Waveform Scrubber Wrapper */}
+        {/* Custom Waveform Scrubber Wrapper — full width */}
         <div className="timeline-scrubber-wrapper flex-1 relative h-9 border border-white/5 bg-[#050608]">
           {/* Visual Waveform Backing */}
           <div 
@@ -225,96 +250,18 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
             className="sequencer-scrubber"
           />
         </div>
-
-        {/* Height Mode Selector on the right */}
-        <div className="flex items-center gap-2 shrink-0">
-          {timelineMode === 'full' && (
-            <div className="flex items-center gap-0.5 bg-[#050608] border border-white/5 rounded-xl p-0.5 text-[10px] font-bold text-slate-400">
-              <button
-                type="button"
-                onClick={() => setTimelineZoom(prev => Math.max(1, Math.round((prev - 0.1) * 10) / 10))}
-                className="px-2 py-0.5 rounded-lg hover:text-white hover:bg-white/5 transition text-[10px] font-mono font-bold"
-                title={lang === 'fr' ? "Zoom arrière" : "Zoom out"}
-              >
-                -
-              </button>
-              <span className="px-1 text-[9px] font-mono text-indigo-300 min-w-[55px] text-center select-none">Zoom {Math.round(timelineZoom * 100)}%</span>
-              <button
-                type="button"
-                onClick={() => setTimelineZoom(prev => Math.min(20, Math.round((prev + 0.1) * 10) / 10))}
-                className="px-2 py-0.5 rounded-lg hover:text-white hover:bg-white/5 transition text-[10px] font-mono font-bold"
-                title={lang === 'fr' ? "Zoom avant" : "Zoom in"}
-              >
-                +
-              </button>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1 bg-slate-950/40 px-2 py-1 rounded-lg border border-white/5">
-            <input 
-              type="number"
-              min="10"
-              value={duration}
-              disabled={!!audioFileName}
-              onChange={(e) => {
-                const val = Math.max(10, parseInt(e.target.value) || 10);
-                onUpdateDuration(val);
-              }}
-              className={`bg-transparent border-none focus:outline-none text-[10px] w-10 text-center font-mono text-indigo-300 font-bold ${
-                audioFileName ? 'opacity-60 cursor-not-allowed' : ''
-              }`}
-              title={audioFileName ? (lang === 'fr' ? "La durée est synchronisée avec la bande-son" : "Duration is synchronized with soundtrack") : (lang === 'fr' ? "Modifier la durée globale" : "Edit global duration")}
-            />
-            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">sec</span>
-          </div>
-
-          <div className="flex items-center gap-0.5 bg-[#050608] border border-white/5 rounded-xl p-0.5 text-[10px] font-bold text-slate-400">
-            <button
-              type="button"
-              onClick={() => onSetMode('collapsed')}
-              className="px-2.5 py-1 rounded-lg hover:text-white hover:bg-white/5 transition text-[9px]"
-              title={lang === 'fr' ? "Masquer la timeline" : "Hide timeline"}
-            >
-              {t.timelineCollapsed}
-            </button>
-            <button
-              type="button"
-              onClick={() => onSetMode('compact')}
-              className={`px-2.5 py-1 rounded-lg transition text-[9px] ${
-                timelineMode === 'compact' 
-                  ? 'bg-indigo-600/15 border border-indigo-500/30 text-indigo-300 font-bold' 
-                  : 'hover:text-white hover:bg-white/5'
-              }`}
-              title={lang === 'fr' ? "Mode compact" : "Compact mode"}
-            >
-              {t.timelineCompact}
-            </button>
-            <button
-              type="button"
-              onClick={() => onSetMode('full')}
-              className={`px-2.5 py-1 rounded-lg transition text-[9px] ${
-                timelineMode === 'full' 
-                  ? 'bg-indigo-600/15 border border-indigo-500/30 text-indigo-300 font-bold' 
-                  : 'hover:text-white hover:bg-white/5'
-              }`}
-              title={lang === 'fr' ? "Mode complet" : "Full mode"}
-            >
-              {t.timelineFull}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Visual Timeline Blocks Track Overview */}
-      {timelineMode === 'full' && (
-        <div className="w-full flex-1 min-h-0 flex px-4 py-1 animate-fade-in bg-slate-950/10">
+      {(
+        <div className="w-full flex-1 min-h-0 overflow-y-auto flex px-4 py-1 animate-fade-in bg-slate-950/10">
           
           {/* Column 1: Performers Names list (outside scroll area) */}
-          <div className="w-28 flex flex-col gap-2 shrink-0 select-none border-r border-white/5 pr-3 pt-0.5">
+          <div className="w-36 flex flex-col gap-2 shrink-0 select-none border-r border-white/5 pr-3 pt-0.5">
             {artists.map(artist => (
               <div 
                 key={artist.id} 
-                className="h-6 flex items-center justify-end text-slate-400 text-[10px] font-bold font-mono tracking-tight text-right truncate hover:text-slate-200 transition"
+                className="h-6 flex items-center justify-end text-slate-400 text-[10px] font-bold font-mono tracking-tight text-right truncate hover:text-slate-200 transition shrink-0"
                 title={artist.name}
               >
                 {artist.name}
@@ -325,7 +272,7 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
           {/* Column 2: Horizontal Scroll Container for tracks */}
           <div 
             ref={timelineTracksRef}
-            className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden"
+            className="flex-1 min-w-0 overflow-x-auto overflow-y-visible"
           >
             <div 
               className="flex-1 flex flex-col gap-2 relative cursor-col-resize" 
@@ -341,7 +288,7 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
               )}
 
               {artists.map(artist => (
-                <div key={artist.id} className="h-6 relative flex items-center">
+                <div key={artist.id} className="h-6 relative flex items-center shrink-0">
                   {/* Track background & movement blocks */}
                   <div className="w-full h-5 rounded-lg bg-[#050608]/60 border border-white/5 relative overflow-hidden shadow-inner">
                     {artist.movements.map(mov => {

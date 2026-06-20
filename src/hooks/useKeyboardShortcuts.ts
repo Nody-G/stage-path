@@ -92,15 +92,10 @@ export function useKeyboardShortcuts({
         if (activeArtistId) {
           if (activeMovementId) {
             e.preventDefault();
-            if (confirm("Supprimer ce déplacement ?")) {
-              handleDeleteMovement(activeArtistId, activeMovementId);
-            }
+            handleDeleteMovement(activeArtistId, activeMovementId);
           } else {
             e.preventDefault();
-            const artist = project.artists.find(a => a.id === activeArtistId);
-            if (artist && confirm(`Supprimer définitivement le figurant ${artist.name} ?`)) {
-              handleDeleteArtist(activeArtistId);
-            }
+            handleDeleteArtist(activeArtistId);
           }
         }
       }

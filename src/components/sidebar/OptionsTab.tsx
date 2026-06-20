@@ -8,7 +8,7 @@ interface OptionsTabProps {
   project: Project;
   lang: Lang;
   onLanguageChange: (lang: Lang) => void;
-  onUpdateSetting: (key: string, val: any) => void;
+  onUpdateSetting: (key: string, val: boolean | number | string) => void;
   onImportProject: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onExportProject: () => void;
   onToggleConstantScale: () => void;
@@ -23,8 +23,8 @@ export const OptionsTab: React.FC<OptionsTabProps> = ({
   onExportProject,
   onToggleConstantScale,
 }) => {
-  const t = (key: keyof typeof translations['fr']) => {
-    return translations[lang][key] || translations['fr'][key] || key;
+  const t = (key: string) => {
+    return translations[lang][key as keyof typeof translations['fr']] || translations['fr'][key as keyof typeof translations['fr']] || key;
   };
 
   const showGrid = project.settings?.showGrid !== false;

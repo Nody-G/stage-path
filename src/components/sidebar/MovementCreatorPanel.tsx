@@ -79,17 +79,17 @@ export const MovementCreatorPanel: React.FC<MovementCreatorPanelProps> = ({
       
       {/* Creator Mode Selector Tabs */}
       <div className="grid grid-cols-4 gap-1 p-0.5 bg-black/40 border border-white/5 rounded-lg">
-        {[
+        {([
           { id: 'p2p', label: 'Jalon' },
           { id: 'vector', label: 'Plume' },
           { id: 'freehand', label: 'Dessin' },
           { id: 'realtime', label: 'Direct' }
-        ].map(mode => (
+        ] as const).map(mode => (
           <button
             key={mode.id}
             type="button"
             onClick={() => {
-              setActiveCreatorMode(mode.id as any);
+              setActiveCreatorMode(mode.id);
               setIsDrawingMode(false);
               setIsRecordingMode(false);
             }}

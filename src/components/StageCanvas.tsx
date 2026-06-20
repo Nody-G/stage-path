@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Artist, Point, Project } from '../types';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
 import { drawStage, wingsPadding } from '../utils/canvasRenderers';
+import { DrawingHUD } from './stage/DrawingHUD';
+import { RecordingHUD } from './stage/RecordingHUD';
 
 interface StageCanvasProps {
   project: Project;
@@ -90,9 +92,6 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
     isRecordingInProgressRef,
     recordedPointsRef,
     recordingCurrentPosRef,
-    zoomIn,
-    zoomOut,
-    resetZoom,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
@@ -176,15 +175,31 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
       });
     };
 
+    render();
+
+    const needsAnimation = 
+      isPlaying || 
+      isPanning || 
+      isDragging || 
+      isDraggingMovPoint || 
+      isDrawingFreehand || 
+      isRecordingMode || 
+      isRecordingInProgressRef.current || 
+      !!hoverInfo;
+
     let animationFrameId: number;
-    const loop = () => {
-      render();
+    if (needsAnimation) {
+      const loop = () => {
+        render();
+        animationFrameId = requestAnimationFrame(loop);
+      };
       animationFrameId = requestAnimationFrame(loop);
-    };
-    loop();
+    }
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
     };
   }, [
     artists,
@@ -195,6 +210,9 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
     project.settings,
     zoom,
     pan,
+    isPanning,
+    isDragging,
+    isDraggingMovPoint,
     vectorPoints,
     vectorTransitionType,
     previewCursorPos,
@@ -212,133 +230,22 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
       className="relative w-full h-full overflow-y-auto flex flex-col bg-[#07080a]"
       style={{ touchAction: 'none' }}
     >
-      {/* Floating Zoom Controls Bar */}
-      <div className="stage-zoom-controls">
-        <button
-          type="button"
-          onClick={zoomOut}
-          className="w-6 h-6 rounded hover:bg-white/10 text-slate-300 hover:text-white transition flex items-center justify-center font-bold text-sm"
-          title="Dézoomer"
-        >
-          -
-        </button>
-        <span className="w-12 text-center text-slate-300 font-mono text-[10px] font-bold">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          type="button"
-          onClick={zoomIn}
-          className="w-6 h-6 rounded hover:bg-white/10 text-slate-300 hover:text-white transition flex items-center justify-center font-bold text-sm"
-          title="Zoomer"
-        >
-          +
-        </button>
-        <div className="w-px h-4 bg-white/10 mx-1" />
-        <button
-          type="button"
-          onClick={resetZoom}
-          className="px-2 py-0.5 rounded hover:bg-indigo-600/30 text-indigo-300 hover:text-white transition text-[9px] font-bold"
-          title="Réinitialiser à 100%"
-        >
-          100%
-        </button>
-      </div>
 
-      {/* Drawing mode HUD Overlay */}
-      {isDrawingMode && (
-        <div 
-          className="absolute top-4 left-1/2 -translate-x-1/2 glass-panel p-3 flex items-center gap-4 border border-indigo-500/30 shadow-lg shadow-indigo-950/20 z-10 animate-fade-in text-xs rounded-xl" 
-          style={{ backgroundColor: 'rgba(11, 13, 19, 0.95)', backdropFilter: 'blur(12px)' }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
-            </span>
-            <span className="font-bold text-slate-200">
-              {drawModeType === 'vector' ? 'Tracé Vectoriel (Plume)' : 'Tracé Libre (Main Levée)'}
-            </span>
-          </div>
-          
-          <div className="h-4 w-px bg-white/10" />
-          
-          <span className="text-slate-400 font-medium">
-            Temps : <span className="font-mono text-indigo-300 font-bold">{drawTimeRange.start.toFixed(1)}s ➔ {drawTimeRange.end.toFixed(1)}s</span>
-          </span>
-          
-          {drawModeType === 'vector' && (
-            <>
-              <div className="h-4 w-px bg-white/10" />
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-400">Type :</span>
-                <button
-                  type="button"
-                  onClick={() => setVectorTransitionType('linear')}
-                  className={`px-2 py-0.5 rounded font-bold border transition text-[10px] ${
-                    vectorTransitionType === 'linear'
-                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]'
-                      : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'
-                  }`}
-                >
-                  Droit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVectorTransitionType('curved')}
-                  className={`px-2 py-0.5 rounded font-bold border transition text-[10px] ${
-                    vectorTransitionType === 'curved'
-                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.4)]'
-                      : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'
-                  }`}
-                >
-                  Courbe
-                </button>
-              </div>
-              
-              <div className="h-4 w-px bg-white/10" />
-              <span className="text-slate-400 font-mono">
-                {vectorPoints.length} point{vectorPoints.length > 1 ? 's' : ''}
-              </span>
-              
-              <div className="h-4 w-px bg-white/10" />
-              <button
-                type="button"
-                onClick={handleValidateVectorDrawing}
-                disabled={vectorPoints.length < 2}
-                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-semibold rounded-lg transition"
-              >
-                Valider (Entrée)
-              </button>
-            </>
-          )}
-          
-          <button
-            type="button"
-            onClick={handleCancelDrawing}
-            className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 font-semibold rounded-lg transition"
-          >
-            Annuler
-          </button>
-        </div>
-      )}
+      <DrawingHUD
+        isDrawingMode={isDrawingMode}
+        drawModeType={drawModeType}
+        drawTimeRange={drawTimeRange}
+        vectorTransitionType={vectorTransitionType}
+        setVectorTransitionType={setVectorTransitionType}
+        vectorPointsLength={vectorPoints.length}
+        onValidateVectorDrawing={handleValidateVectorDrawing}
+        onCancelDrawing={handleCancelDrawing}
+      />
 
-      {/* Recording mode HUD Overlay */}
-      {isRecordingMode && (
-        <div 
-          className="absolute top-4 left-1/2 -translate-x-1/2 glass-panel p-2.5 flex items-center gap-3 border border-red-500/30 shadow-lg shadow-red-950/20 z-10 text-xs rounded-xl" 
-          style={{ backgroundColor: 'rgba(20, 10, 10, 0.95)', backdropFilter: 'blur(12px)' }}
-        >
-          <span className="flex h-2.5 w-2.5 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-          </span>
-          <span className="font-bold text-red-400 tracking-wider">● ENREGISTREMENT EN DIRECT</span>
-          <div className="h-4 w-px bg-white/10" />
-          <span className="text-slate-300">
-            {isRecordingInProgressRef.current ? "Enregistrement en cours... Glissez le figurant !" : "Glissez le figurant pour démarrer l'enregistrement."}
-          </span>
-        </div>
-      )}
+      <RecordingHUD
+        isRecordingMode={isRecordingMode}
+        isRecordingInProgress={isRecordingInProgressRef.current}
+      />
 
       <canvas
         ref={canvasRef}

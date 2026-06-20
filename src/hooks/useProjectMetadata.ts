@@ -80,7 +80,7 @@ export function useProjectMetadata({
     broadcastProject(updated);
   };
 
-  const handleUpdateSetting = (key: string, val: any) => {
+  const handleUpdateSetting = (key: string, val: boolean | number | string) => {
     const updated = {
       ...project,
       settings: { ...project.settings, [key]: val }
