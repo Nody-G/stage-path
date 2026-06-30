@@ -1,5 +1,5 @@
 import { Artist, Point, Project } from '../types';
-import { getArtistPositionAtTime, generateCurveLUT } from './math';
+import { getArtistPositionAtTime } from './math';
 
 
 export const wingsPadding = 40; // 0.4 meters of wings all around
@@ -30,11 +30,7 @@ interface DrawStageParams {
   zoom: number;
   pan: Point;
   bgImage: HTMLImageElement | null;
-  vectorPoints: Point[];
-  vectorTransitionType: 'linear' | 'curved';
-  previewCursorPos: Point | null;
   isDrawingMode: boolean;
-  drawModeType: 'freehand' | 'vector';
   isDrawingFreehand: boolean;
   freehandPoints: Point[];
   isRecordingMode: boolean;
@@ -43,6 +39,7 @@ interface DrawStageParams {
   recordingCurrentPos: Point | null;
   hoverInfo: { movId: string; pointIdx: number } | null;
   isPlaying: boolean;
+  isHoveringPlusBtn?: boolean;
 }
 
 export function drawStage({
@@ -57,11 +54,7 @@ export function drawStage({
   zoom,
   pan,
   bgImage,
-  vectorPoints,
-  vectorTransitionType,
-  previewCursorPos,
   isDrawingMode,
-  drawModeType,
   isDrawingFreehand,
   freehandPoints,
   isRecordingMode,
@@ -69,7 +62,8 @@ export function drawStage({
   isRecordingInProgress,
   recordingCurrentPos,
   hoverInfo,
-  isPlaying
+  isPlaying,
+  isHoveringPlusBtn
 }: DrawStageParams) {
   const stageW = project.stageWidth * 100;
   const stageH = project.stageHeight * 100;
@@ -310,7 +304,7 @@ export function drawStage({
         // Draw handles for all control points of this movement (only for active selected artist)
         if (isSelected && movement.points.length >= 2) {
           // Draw support dotted lines for curves connecting control polygon
-          if (movement.transitionType === 'curved' && movement.points.length >= 3) {
+          if (movement.points.length >= 3) {
             ctx.save();
             ctx.beginPath();
             ctx.moveTo(movement.points[0].x, movement.points[0].y);
@@ -362,73 +356,10 @@ export function drawStage({
     ctx.restore();
   });
 
-  // 4b. Draw Active Vector Drawing Path
-  if (isDrawingMode && drawModeType === 'vector' && vectorPoints.length > 0) {
-    ctx.save();
-    
-    // Draw preview line to cursor
-    if (previewCursorPos) {
-      ctx.beginPath();
-      ctx.moveTo(vectorPoints[vectorPoints.length - 1].x, vectorPoints[vectorPoints.length - 1].y);
-      ctx.lineTo(previewCursorPos.x, previewCursorPos.y);
-      ctx.strokeStyle = 'rgba(99, 102, 241, 0.45)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      ctx.stroke();
-    }
-    
-    // Draw straight vector connections
-    ctx.beginPath();
-    ctx.moveTo(vectorPoints[0].x, vectorPoints[0].y);
-    for (let i = 1; i < vectorPoints.length; i++) {
-      ctx.lineTo(vectorPoints[i].x, vectorPoints[i].y);
-    }
-    ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
 
-    // Draw smooth curve preview if curved
-    if (vectorTransitionType === 'curved' && vectorPoints.length >= 3) {
-      try {
-        const lut = generateCurveLUT(vectorPoints);
-        if (lut.length >= 2) {
-          ctx.beginPath();
-          ctx.moveTo(lut[0].x, lut[0].y);
-          for (let i = 1; i < lut.length; i++) {
-            ctx.lineTo(lut[i].x, lut[i].y);
-          }
-          ctx.strokeStyle = '#6366f1';
-          ctx.lineWidth = 4;
-          ctx.stroke();
-        }
-      } catch (e) {
-        // Fallback to straight lines
-      }
-    }
-
-    // Draw circles for all placed points
-    vectorPoints.forEach((pt, idx) => {
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = '#6366f1';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.fill();
-      ctx.stroke();
-      
-      // Display index
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      ctx.font = 'bold 10px Outfit';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(`${idx + 1}`, pt.x, pt.y - 8);
-    });
-
-    ctx.restore();
-  }
 
   // 4c. Draw Active Freehand Trail
-  if (isDrawingMode && drawModeType === 'freehand' && isDrawingFreehand && freehandPoints.length > 0) {
+  if (isDrawingMode && isDrawingFreehand && freehandPoints.length > 0) {
     ctx.save();
     ctx.beginPath();
     ctx.moveTo(freehandPoints[0].x, freehandPoints[0].y);
@@ -611,6 +542,39 @@ export function drawStage({
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       ctx.fillText(`X: ${liveX.toFixed(2)}m, Y: ${liveY.toFixed(2)}m`, 0, 31);
+    }
+
+    // Draw the "+" button if this artist is selected
+    if (isSelected) {
+      ctx.save();
+      // Translate to the button center in local coords
+      ctx.translate(18, -18);
+      
+      const isHovered = isHoveringPlusBtn;
+      
+      // Draw glassmorphic circle
+      ctx.beginPath();
+      ctx.arc(0, 0, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = isHovered ? artist.color : 'rgba(15, 23, 42, 0.95)';
+      ctx.strokeStyle = isHovered ? '#ffffff' : artist.color;
+      ctx.lineWidth = 1.2;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 1;
+      ctx.fill();
+      ctx.stroke();
+      
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      
+      // Draw "+" sign
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 8px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('+', 0, -0.3); // tiny vertical adjustment for alignment
+      
+      ctx.restore();
     }
 
     ctx.restore(); // token scale restore

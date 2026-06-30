@@ -42,7 +42,7 @@ interface EditorWorkspaceProps {
   handleTogglePlay: () => void;
   handleStop: () => void;
   handleTimelineScrub: (time: number) => void;
-  handleDoubleClickStage: (position: Point) => void;
+  handleDoubleClickStage: (position: Point, clientX?: number, clientY?: number) => void;
   handleDragStart: () => void;
   handleDragEnd: () => void;
 
@@ -80,14 +80,7 @@ interface EditorWorkspaceProps {
   handleDeleteMovement: (artistId: string, movId: string) => void;
   handleUpdateMovementTimeRange: (artistId: string, movId: string, start: number, end: number) => void;
   handleUpdateMovementLabel: (artistId: string, movId: string, label: string) => void;
-  handleCreateManualMovement: (
-    artistId: string,
-    startTime: number,
-    endTime: number,
-    targetX: number,
-    targetY: number,
-    transitionType?: 'linear' | 'curved'
-  ) => void;
+  handleCreateMovementAtTime: (artistId: string, time: number) => void;
 
   handleAudioUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleBackgroundUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -109,7 +102,6 @@ interface EditorWorkspaceProps {
   // Keypoints
   handleUpdateKeypointTime: (artistId: string, keypointId: string, time: number) => void;
   handleUpdateKeypointPosition: (artistId: string, keypointId: string, position: Point) => void;
-  handleToggleTransitionType: (artistId: string, keypointId: string) => void;
   handleDeleteKeypoint: (artistId: string, keypointId: string) => void;
   handleCreateKeypointAtCurrentTime: (artistId: string) => void;
 
@@ -187,8 +179,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   handleAddMovementPoint,
   handleDeleteMovement,
   handleUpdateMovementTimeRange,
-  handleUpdateMovementLabel,
-  handleCreateManualMovement,
+  handleCreateMovementAtTime,
 
   handleAudioUpload,
   handleBackgroundUpload,
@@ -200,7 +191,6 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
 
   handleUpdateKeypointTime,
   handleUpdateKeypointPosition,
-  handleToggleTransitionType,
   handleDeleteKeypoint,
   handleCreateKeypointAtCurrentTime,
 
@@ -251,6 +241,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
               placementArtistId={null}
               setPlacementArtistId={() => {}}
               onDoubleClickStage={handleDoubleClickStage}
+              onCreateMovementAtTime={handleCreateMovementAtTime}
               
               isDrawingMode={isDrawingMode}
               setIsDrawingMode={setIsDrawingMode}
@@ -380,7 +371,6 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
           // Keyframe editor properties
           onUpdateKeypointTime={handleUpdateKeypointTime}
           onUpdateKeypointPosition={handleUpdateKeypointPosition}
-          onToggleTransitionType={handleToggleTransitionType}
           onDeleteKeypoint={handleDeleteKeypoint}
           onCreateKeypointAtCurrentTime={handleCreateKeypointAtCurrentTime}
 
@@ -393,9 +383,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
           setDrawTimeRange={setDrawTimeRange}
           isRecordingMode={isRecordingMode}
           setIsRecordingMode={setIsRecordingMode}
-          onCreateManualMovement={handleCreateManualMovement}
           onDeleteMovementPoint={handleDeleteMovementPoint}
-          onUpdateMovementLabel={handleUpdateMovementLabel}
         />
       </main>
 
@@ -415,6 +403,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
         onTimelineResize={setTimelineHeight}
         onTimelineScrub={handleTimelineScrub}
         onUpdateMovementTimeRange={handleUpdateMovementTimeRange}
+        onAddMovementAtTime={handleCreateMovementAtTime}
         formatTime={formatTime}
         onUpdateDuration={handleUpdateProjectDuration}
       />

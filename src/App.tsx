@@ -89,6 +89,8 @@ export default function App() {
     defaultName: string;
     defaultColor: string;
     position: Point;
+    clientX?: number;
+    clientY?: number;
   }>({ open: false, defaultName: '', defaultColor: '#6366f1', position: { x: 0, y: 0 } });
 
   // Timeline height (resizable by drag)
@@ -232,8 +234,8 @@ export default function App() {
     activeArtistId,
     setActiveArtistId,
     handleSelectArtist,
-    onRequestCreateArtist: (defaultName, defaultColor, position) => {
-      setCreateArtistModal({ open: true, defaultName, defaultColor, position });
+    onRequestCreateArtist: (defaultName, defaultColor, position, clientX, clientY) => {
+      setCreateArtistModal({ open: true, defaultName, defaultColor, position, clientX, clientY });
     },
   });
 
@@ -241,11 +243,10 @@ export default function App() {
     handleUpdateArtistPositionAtTime,
     handleUpdateKeypointTime,
     handleUpdateKeypointPosition,
-    handleToggleTransitionType,
     handleDeleteKeypoint,
     handleCreateKeypointAtCurrentTime,
     handleUpdateMovementControlPoint,
-    handleCreateManualMovement,
+    handleCreateMovementAtTime,
     handleFinishDrawingPath,
     handleFinishRealtimeRecording,
     handleUpdateMovementPoint,
@@ -262,6 +263,7 @@ export default function App() {
     currentTime,
     broadcastProject,
     onTimelineScrub: handleTimelineScrub,
+    onSelectArtist: handleSelectArtist,
   });
 
   const {
@@ -423,7 +425,7 @@ export default function App() {
           handleDeleteMovement={handleDeleteMovement}
           handleUpdateMovementTimeRange={handleUpdateMovementTimeRange}
           handleUpdateMovementLabel={handleUpdateMovementLabel}
-          handleCreateManualMovement={handleCreateManualMovement}
+          handleCreateMovementAtTime={handleCreateMovementAtTime}
 
           handleAudioUpload={handleAudioUpload}
           handleBackgroundUpload={handleBackgroundUpload}
@@ -435,7 +437,6 @@ export default function App() {
 
           handleUpdateKeypointTime={handleUpdateKeypointTime}
           handleUpdateKeypointPosition={handleUpdateKeypointPosition}
-          handleToggleTransitionType={handleToggleTransitionType}
           handleDeleteKeypoint={handleDeleteKeypoint}
           handleCreateKeypointAtCurrentTime={handleCreateKeypointAtCurrentTime}
 
@@ -455,6 +456,8 @@ export default function App() {
         cancelLabel="Annuler"
         showColorPicker
         defaultColor={createArtistModal.defaultColor}
+        clientX={createArtistModal.clientX}
+        clientY={createArtistModal.clientY}
         onConfirm={(name, color) => {
           handleConfirmCreateArtist(name, color, createArtistModal.position);
           setCreateArtistModal(m => ({ ...m, open: false }));

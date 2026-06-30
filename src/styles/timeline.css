@@ -1,0 +1,522 @@
+/* Sequencer Timeline Scrubber styling */
+.timeline-scrubber-wrapper {
+  position: relative;
+  flex: 1;
+  height: 42px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.timeline-waveform {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  pointer-events: none;
+  opacity: 0.3;
+  transition: opacity var(--transition-fast);
+}
+
+.timeline-waveform.active {
+  opacity: 0.85;
+}
+
+.waveform-bar {
+  width: 3px;
+  border-radius: 2px;
+  transition: background-color var(--transition-fast), height 0.2s;
+}
+
+input[type="range"].sequencer-scrubber {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  margin: 0;
+  z-index: 2;
+  cursor: pointer;
+}
+
+input[type="range"].sequencer-scrubber:focus {
+  outline: none;
+}
+
+input[type="range"].sequencer-scrubber::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 100%;
+}
+
+input[type="range"].sequencer-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--accent);
+  width: 4px;
+  height: 42px;
+  border-radius: 99px;
+  box-shadow: 0 0 12px var(--accent);
+  transition: background-color var(--transition-fast), width var(--transition-fast);
+}
+
+input[type="range"].sequencer-scrubber:hover::-webkit-slider-thumb {
+  background-color: #818cf8;
+  width: 6px;
+}
+
+input[type="range"].sequencer-scrubber:active::-webkit-slider-thumb {
+  background-color: var(--accent-secondary);
+  width: 6px;
+  box-shadow: 0 0 18px var(--accent-secondary);
+}
+
+/* Collapsed timeline handle */
+.timeline-collapsed-handle {
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.timeline-collapsed-handle:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+/* Duration alignment button */
+.btn-adjust-duration {
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #c7d2fe;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-adjust-duration:hover {
+  background: rgba(99, 102, 241, 0.45);
+  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Footer Timeline Full Width Styling */
+.footer-timeline {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--border);
+  width: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Floating Stage Elements */
+.floating-transport-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(13, 17, 24, 0.8);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 10px 20px;
+  border-radius: 99px;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  user-select: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-transport-bar:hover {
+  background: rgba(13, 17, 24, 0.9);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(99, 102, 241, 0.2);
+}
+
+.floating-transport-bar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Timeline Movement Block styling & selection high visibility state */
+.timeline-movement-block {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #ffffff;
+  padding-left: 10px;
+  padding-right: 10px;
+  overflow: hidden;
+  user-select: none;
+  opacity: 0.85;
+}
+
+.timeline-movement-block:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  opacity: 1;
+}
+
+.timeline-movement-block.selected {
+  border-color: #ffffff !important;
+  opacity: 1 !important;
+  z-index: 10;
+  box-shadow: 
+    0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 0 15px rgba(255, 255, 255, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 4px 6px rgba(0, 0, 0, 0.4) !important;
+  animation: selected-pulse 2s infinite ease-in-out;
+}
+
+@keyframes selected-pulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 2px rgba(255, 255, 255, 0.5),
+      0 0 12px rgba(255, 255, 255, 0.75),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 3.5px rgba(255, 255, 255, 0.8),
+      0 0 22px rgba(255, 255, 255, 0.95),
+      inset 0 1px 0 rgba(255, 255, 255, 0.45),
+      0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ==========================================================================
+   Resolve-style Timeline Styles
+   ========================================================================== */
+
+/* Sticky ruler and track headers */
+.timeline-sticky-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  height: 32px;
+  background-color: rgb(7, 8, 10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 46;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.timeline-ruler {
+  position: sticky;
+  top: 0;
+  height: 32px;
+  background-color: rgba(9, 11, 17, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 30;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: col-resize;
+  user-select: none;
+  overflow: visible;
+  width: 100%;
+  min-width: 100%;
+}
+
+/* Ruler Ticks */
+.timeline-tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+}
+
+.timeline-tick.major {
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+.timeline-tick.minor {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.timeline-tick-label {
+  position: absolute;
+  bottom: 10px;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Background grid lines stretching down */
+.timeline-grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.03);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Playhead Line and Handle */
+.timeline-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.timeline-playhead-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1.5px;
+  background-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 0 4px rgba(239, 68, 68, 0.4);
+}
+
+.timeline-playhead-handle {
+  position: absolute;
+  top: 16px;
+  left: 0.5px; /* Offset slightly to center with the 1.5px line */
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 16px;
+  cursor: ew-resize;
+  pointer-events: auto;
+  z-index: 50;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+  transition: transform 0.1s ease;
+}
+
+.timeline-playhead-handle:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.timeline-playhead-handle svg path {
+  fill: #ef4444;
+  transition: fill 0.15s ease;
+}
+
+.timeline-playhead-handle:hover svg path {
+  fill: #f43f5e;
+}
+
+/* Dedicated Scrollable Audio Track */
+.timeline-audio-track {
+  height: 32px;
+  position: sticky;
+  top: 32px;
+  z-index: 29;
+  width: 100%;
+  background-color: rgba(9, 11, 17, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.timeline-names-column {
+  position: sticky;
+  left: 0;
+  z-index: 45;
+  background-color: rgb(9, 11, 17);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.timeline-audio-spacer {
+  position: sticky;
+  top: 32px;
+  left: 0;
+  z-index: 46;
+  height: 32px;
+  background-color: rgb(7, 8, 10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.timeline-audio-waveform-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+/* Timeline Floating Zoom Controls */
+.timeline-zoom-controls {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.timeline-zoom-label {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.timeline-zoom-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.timeline-zoom-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.timeline-zoom-slider {
+  width: 80px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.15s ease;
+}
+
+.timeline-zoom-slider:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Custom slider thumb styling */
+.timeline-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6366f1; /* indigo-500 */
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+  border: none;
+  transition: transform 0.1s ease, background-color 0.15s ease;
+}
+
+.timeline-zoom-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: #818cf8; /* indigo-400 */
+}
+
+.timeline-zoom-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6366f1;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+  border: none;
+  transition: transform 0.1s ease, background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.timeline-zoom-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  background: #818cf8;
+}
+
+.timeline-zoom-fit-btn {
+  padding: 2px 6px;
+  height: 22px;
+  border-radius: 4px;
+  background-color: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  color: #a5b4fc; /* indigo-300 */
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.timeline-zoom-fit-btn:hover {
+  background-color: rgba(99, 102, 241, 0.25);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}

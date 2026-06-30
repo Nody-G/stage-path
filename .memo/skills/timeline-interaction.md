@@ -63,7 +63,7 @@ Trois divs absolument positionnés à l'intérieur du bloc :
 
 ## Zoom de la Timeline
 
-- **Molette** : événement natif `{ passive: false }` sur le conteneur
+- **Molette** : Zoom horizontal avec `Ctrl + Molette` (événement natif `{ passive: false }` sur le conteneur). Sans `Ctrl`, la molette scrolle verticalement.
 - **Centrage** : le `scrollLeft` est ajusté pour maintenir le point sous le curseur
 - **Facteur** : `1.05` par tick de molette
 - **Limites** : `1x` (100%) à `20x` (2000%)

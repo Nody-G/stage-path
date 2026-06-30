@@ -10,6 +10,7 @@ interface UseMovementEngineProps {
   currentTime: number;
   broadcastProject: (updatedProj: Project) => void;
   onTimelineScrub?: (time: number) => void;
+  onSelectArtist?: (id: string | null) => void;
 }
 
 export function useMovementEngine({
@@ -20,6 +21,7 @@ export function useMovementEngine({
   currentTime,
   broadcastProject,
   onTimelineScrub,
+  onSelectArtist,
 }: UseMovementEngineProps) {
 
   const handleUpdateArtistPositionAtTime = (artistId: string, time: number, position: Point) => {
@@ -414,39 +416,7 @@ export function useMovementEngine({
     broadcastProject(updatedProj);
   };
 
-  const handleToggleTransitionType = (artistId: string, movId: string) => {
-    const updatedArtists = project.artists.map(art => {
-      if (art.id !== artistId) return art;
 
-      const updatedMovements = art.movements.map(mov => {
-        if (mov.id !== movId) return mov;
-        const currentType = mov.transitionType || 'linear';
-        const nextType = currentType === 'linear' ? 'curved' : 'linear';
-
-        const startPt = mov.points[0];
-        const endPt = mov.points[mov.points.length - 1];
-
-        const points = nextType === 'curved'
-          ? generateDefaultCurvedPoints(startPt, endPt)
-          : [startPt, endPt];
-
-        return updateMovementLUT({
-          ...mov,
-          transitionType: nextType,
-          points
-        });
-      });
-
-      return {
-        ...art,
-        movements: updatedMovements
-      };
-    });
-
-    const updatedProj = { ...project, artists: updatedArtists };
-    setProject(updatedProj);
-    broadcastProject(updatedProj);
-  };
 
   const handleDeleteKeypoint = (artistId: string, keypointId: string) => {
     if (keypointId === 'initial') return;
@@ -514,6 +484,8 @@ export function useMovementEngine({
       return;
     }
 
+    let createdMovId = '';
+
     const updatedArtists = project.artists.map(art => {
       if (art.id !== artistId) return art;
 
@@ -531,6 +503,7 @@ export function useMovementEngine({
         transitionType
       };
 
+      createdMovId = newMov.id;
       const updatedMovements = insertMovementSegment(art.movements, newMov);
 
       return {
@@ -542,11 +515,41 @@ export function useMovementEngine({
     const updatedProj = { ...project, artists: updatedArtists };
     setProject(updatedProj);
     broadcastProject(updatedProj);
+
+    if (createdMovId) {
+      setActiveMovementId(createdMovId);
+    }
+
     if (onTimelineScrub) {
       setTimeout(() => {
         onTimelineScrub(roundedEnd);
       }, 50);
     }
+  };
+
+  const handleCreateMovementAtTime = (artistId: string, time: number) => {
+    const artist = project.artists.find(art => art.id === artistId);
+    if (!artist) return;
+
+    if (onSelectArtist) {
+      onSelectArtist(artistId);
+    }
+
+    const startTime = Math.max(0, Math.round(time * 100) / 100);
+    const endTime = Math.min(project.duration, Math.round((time + 2) * 100) / 100);
+
+    if (startTime >= endTime) return;
+
+    const startPos = getArtistPositionAtTime(artist, startTime, project.stageWidth, project.stageHeight);
+
+    // Calculate default physical displacement (1 meter to the right/left)
+    let targetX = startPos.x + 100; // 100px = 1m on our canvas
+    const stageMaxX = project.stageWidth * 100;
+    if (targetX > stageMaxX - 50) {
+      targetX = startPos.x - 100;
+    }
+
+    handleCreateManualMovement(artistId, startTime, endTime, targetX, startPos.y, 'linear');
   };
 
   const handleFinishDrawingPath = (
@@ -930,11 +933,11 @@ export function useMovementEngine({
     handleUpdateArtistPositionAtTime,
     handleUpdateKeypointTime,
     handleUpdateKeypointPosition,
-    handleToggleTransitionType,
     handleDeleteKeypoint,
     handleCreateKeypointAtCurrentTime,
     handleUpdateMovementControlPoint,
     handleCreateManualMovement,
+    handleCreateMovementAtTime,
     handleFinishDrawingPath,
     handleFinishRealtimeRecording,
     handleUpdateMovementPoint,

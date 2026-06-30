@@ -7,7 +7,7 @@ interface UseArtistManagementProps {
   activeArtistId: string | null;
   setActiveArtistId: (id: string | null) => void;
   handleSelectArtist: (id: string | null) => void;
-  onRequestCreateArtist?: (defaultName: string, defaultColor: string, position: Point) => void;
+  onRequestCreateArtist?: (defaultName: string, defaultColor: string, position: Point, clientX?: number, clientY?: number) => void;
 }
 
 export function useArtistManagement({
@@ -141,12 +141,12 @@ export function useArtistManagement({
     broadcastProject(updatedProj);
   };
 
-  const handleDoubleClickStage = (position: Point) => {
+  const handleDoubleClickStage = (position: Point, clientX?: number, clientY?: number) => {
     const defaultName = `Figurant ${project.artists.length + 1}`;
     const colors = ['#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#8b5cf6', '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f97316', '#ef4444'];
     const defaultColor = colors[project.artists.length % colors.length];
     if (onRequestCreateArtist) {
-      onRequestCreateArtist(defaultName, defaultColor, position);
+      onRequestCreateArtist(defaultName, defaultColor, position, clientX, clientY);
     }
   };
 

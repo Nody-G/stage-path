@@ -1,0 +1,91 @@
+/* Sidebar Styles */
+.control-sidebar {
+  width: 350px;
+  height: 100%;
+  border-left: 1px solid var(--border);
+  background: var(--bg-card);
+  transition: transform var(--transition-normal), width var(--transition-normal);
+  z-index: 10;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: -10px 0 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.app-workspace.sidebar-closed .control-sidebar {
+  transform: translateX(100%);
+  width: 0;
+  border-left: none;
+}
+
+.sidebar-toggle-collapsed {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+  z-index: 20;
+  border: 1px solid var(--border);
+}
+
+.sidebar-toggle-collapsed:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.floating-sidebar-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 20;
+  transition: all var(--transition-fast);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  background: rgba(13, 17, 24, 0.8);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+.floating-sidebar-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.2);
+}
+
+/* Real-time Performer Status Card */
+.realtime-status-card {
+  background: rgba(99, 102, 241, 0.04);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Keypoints detail list */
+.keypoints-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  max-height: 110px;
+  overflow-y: auto;
+  margin-top: 6px;
+}

@@ -12,6 +12,8 @@ interface AppModalProps {
   cancelLabel?: string;
   showColorPicker?: boolean;
   defaultColor?: string;
+  clientX?: number;
+  clientY?: number;
   onConfirm: (value: string, color: string) => void;
   onCancel: () => void;
 }
@@ -33,6 +35,8 @@ export const AppModal: React.FC<AppModalProps> = ({
   cancelLabel = 'Annuler',
   showColorPicker = false,
   defaultColor = '#6366f1',
+  clientX,
+  clientY,
   onConfirm,
   onCancel,
 }) => {
@@ -65,26 +69,53 @@ export const AppModal: React.FC<AppModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Compute positioning style
+  let cardStyle: React.CSSProperties = {};
+  const isPositioned = clientX !== undefined && clientY !== undefined;
+
+  if (isPositioned) {
+    const modalWidth = 360;
+    const modalHeight = showColorPicker ? 300 : 180;
+    
+    let left = clientX - modalWidth / 2;
+    let top = clientY + 15;
+    
+    // Boundary checks to keep modal completely on screen
+    if (left + modalWidth > window.innerWidth) {
+      left = window.innerWidth - modalWidth - 20;
+    }
+    if (left < 20) {
+      left = 20;
+    }
+    if (top + modalHeight > window.innerHeight) {
+      top = clientY - modalHeight - 15;
+    }
+    if (top < 20) {
+      top = 20;
+    }
+    
+    cardStyle = {
+      position: 'absolute',
+      left: `${left}px`,
+      top: `${top}px`,
+    };
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center animate-fade-in"
-      style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+      className={`app-modal-overlay animate-fade-in${isPositioned ? ' pos-coords' : ''}`}
       onClick={onCancel}
     >
       <div
-        className="relative flex flex-col gap-5 rounded-2xl border border-white/10 shadow-2xl w-[360px] p-6"
-        style={{
-          background: 'linear-gradient(135deg, rgba(17,19,30,0.98) 0%, rgba(11,13,22,0.98) 100%)',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.05), 0 24px 60px rgba(0,0,0,0.6), 0 0 80px rgba(99,102,241,0.08)',
-          animation: 'modalEnter 0.18s cubic-bezier(0.34,1.56,0.64,1) both',
-        }}
+        className="app-modal-card"
+        style={cardStyle}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
           type="button"
           onClick={onCancel}
-          className="absolute top-4 right-4 p-1 rounded-lg text-slate-500 hover:text-white hover:bg-white/10 transition"
+          className="app-modal-close-btn"
         >
           <X size={14} />
         </button>
@@ -137,7 +168,7 @@ export const AppModal: React.FC<AppModalProps> = ({
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className="w-5 h-5 rounded-full transition-transform duration-150 hover:scale-125"
+                  className="app-modal-color-btn"
                   style={{
                     backgroundColor: c,
                     outline: color === c ? `2px solid ${c}` : '2px solid transparent',
@@ -167,7 +198,7 @@ export const AppModal: React.FC<AppModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/8 border border-white/5 hover:border-white/10 transition"
+            className="app-modal-btn-cancel"
           >
             {cancelLabel}
           </button>
@@ -175,7 +206,7 @@ export const AppModal: React.FC<AppModalProps> = ({
             type="button"
             onClick={handleConfirm}
             disabled={!value.trim()}
-            className="px-5 py-2 rounded-xl text-xs font-bold text-white transition-all duration-200"
+            className="app-modal-btn-confirm"
             style={{
               background: value.trim()
                 ? `linear-gradient(135deg, ${color}cc, ${color}88)`

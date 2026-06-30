@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Artist } from '../types';
 import { useAudioWaveform } from '../hooks/useAudioWaveform';
 import { useTimelineDrag } from '../hooks/useTimelineDrag';
 import { translations } from '../utils/i18n';
+import { getTimelineTicks } from '../utils/timelineTicks';
+import { useTimelineScrub } from '../hooks/useTimelineScrub';
+import { PerformerNamesColumn } from './timeline/PerformerNamesColumn';
+import { TimelineAudioWaveform } from './timeline/TimelineAudioWaveform';
+import { TimelinePlayhead } from './timeline/TimelinePlayhead';
+import { TimelineRuler } from './timeline/TimelineRuler';
+import { TimelineTracks } from './timeline/TimelineTracks';
+import { useTimelineHeightResize } from '../hooks/useTimelineHeightResize';
+import { useTimelineAutoScroll } from '../hooks/useTimelineAutoScroll';
 
 interface FooterTimelineProps {
   lang: 'fr' | 'en';
@@ -19,6 +28,7 @@ interface FooterTimelineProps {
   onTimelineResize: (height: number) => void;
   onTimelineScrub: (time: number) => void;
   onUpdateMovementTimeRange: (artistId: string, movementId: string, newStart: number, newEnd: number) => void;
+  onAddMovementAtTime?: (artistId: string, time: number) => void;
   formatTime: (time: number) => string;
   onUpdateDuration: (dur: number) => void;
 }
@@ -38,81 +48,189 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
   onTimelineResize,
   onTimelineScrub,
   onUpdateMovementTimeRange,
+  onAddMovementAtTime,
   formatTime,
   onUpdateDuration: _onUpdateDuration,
 }) => {
   const [timelineZoom, setTimelineZoom] = useState<number>(1);
-  const timelineTracksRef = React.useRef<HTMLDivElement | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState<number>(1000);
+  const [scrollLeft, setScrollLeft] = useState<number>(0);
+  const {
+    isResizing,
+    handleResizeMouseDown,
+  } = useTimelineHeightResize({
+    timelineHeight,
+    onTimelineResize,
+  });
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const handleResizeMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
+  const timelineTracksRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLElement | null>(null);
+
+  // Track viewportWidth dynamically with a ResizeObserver on the stable footer element
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer) return;
+
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        // Visible tracks width is footer width minus PerformerNamesColumn width (144px)
+        const footerWidth = entry.contentRect.width;
+        setViewportWidth(Math.max(100, footerWidth - 144));
+      }
+    });
+    observer.observe(footer);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Track scrollLeft horizontally to handle ticks virtualization
+  useEffect(() => {
+    const tracksDiv = timelineTracksRef.current;
+    if (!tracksDiv) return;
+
+    const handleScroll = () => {
+      setScrollLeft(tracksDiv.scrollLeft);
+    };
+
+    tracksDiv.addEventListener('scroll', handleScroll);
+    return () => {
+      tracksDiv.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Sync isPlaying state by watching the playhead changes over short windows
+  const lastTimeRef = useRef(currentTime);
+  useEffect(() => {
+    const diff = Math.abs(currentTime - lastTimeRef.current);
+    // If time is moving forward, we are playing
+    if (diff > 0 && diff < 0.25) {
+      setIsPlaying(true);
+    } else if (diff === 0) {
+      setIsPlaying(false);
+    }
+    lastTimeRef.current = currentTime;
+  }, [currentTime]);
+  useTimelineAutoScroll({
+    timelineTracksRef,
+    isPlaying,
+    currentTime,
+    duration,
+    timelineZoom,
+    viewportWidth,
+  });
+  const t = translations[lang];
+  const maxZoom = Math.min(50, Math.max(10, Math.round((150 * duration) / (viewportWidth || 1000))));
+  const lastZoomRef = useRef<number>(5);
+  const handleZoomChange = (updater: number | ((prev: number) => number)) => {
+    const tracksDiv = timelineTracksRef.current;
+    if (!tracksDiv) return;
+
+    const viewportWidthVal = viewportWidth;
+    if (viewportWidthVal <= 0) return;
+
+    setTimelineZoom(prev => {
+      const nextZoom = typeof updater === 'function' ? updater(prev) : updater;
+      const clampedZoom = Math.min(maxZoom, Math.max(1, nextZoom));
+      const roundedZoom = Math.round(clampedZoom * 100) / 100;
+
+      if (roundedZoom !== prev) {
+        const ratio = roundedZoom / prev;
+        
+        // Anchor zoom calculations around the playhead time
+        const oldContentWidth = viewportWidthVal * prev;
+        const anchorXContent = (currentTime / duration) * oldContentWidth;
+        
+        // If playhead is currently visible in viewport, keep its exact relative offset
+        const playheadViewportX = anchorXContent - tracksDiv.scrollLeft;
+        const anchorXViewport = (playheadViewportX >= 0 && playheadViewportX <= viewportWidthVal)
+          ? playheadViewportX
+          : viewportWidthVal / 2;
+
+        const newScrollLeft = anchorXContent * ratio - anchorXViewport;
+        requestAnimationFrame(() => {
+          tracksDiv.scrollLeft = newScrollLeft;
+        });
+      }
+
+      return roundedZoom;
+    });
   };
 
+  // Keyboard shortcuts (+ / - keys and Shift + Z fit key)
   useEffect(() => {
-    if (!isResizing) return;
-    const handleMouseMove = (e: MouseEvent) => {
-      const newHeight = window.innerHeight - e.clientY;
-      const clamped = Math.min(Math.max(newHeight, 60), 500);
-      onTimelineResize(clamped);
+    const isTyping = () => {
+      const active = document.activeElement;
+      if (!active) return false;
+      const tagName = active.tagName.toLowerCase();
+      return tagName === 'input' || tagName === 'textarea' || active.getAttribute('contenteditable') === 'true';
     };
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      localStorage.setItem("stage_path_timeline_height", timelineHeight.toString());
-      document.body.style.cursor = "";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTyping()) return;
+
+      const isCtrl = e.ctrlKey || e.metaKey;
+
+      if ((isCtrl && (e.key === '=' || e.key === '+')) || e.key === '+' || (!isCtrl && e.key === '=')) {
+        e.preventDefault(); handleZoomChange(prev => prev * 1.10); return;
+      }
+      if ((isCtrl && e.key === '-') || e.key === '-') {
+        e.preventDefault(); handleZoomChange(prev => prev / 1.10); return;
+      }
+
+      // Shift + Z -> Toggle Fit / Last Zoom
+      if (e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        setTimelineZoom(prev => {
+          if (prev > 1.01) {
+            lastZoomRef.current = prev;
+            requestAnimationFrame(() => {
+              if (timelineTracksRef.current) timelineTracksRef.current.scrollLeft = 0;
+            });
+            return 1;
+          } else {
+            const targetZoom = lastZoomRef.current;
+            const playheadXContent = (currentTime / duration) * viewportWidth * targetZoom;
+            requestAnimationFrame(() => {
+              if (timelineTracksRef.current) {
+                timelineTracksRef.current.scrollLeft = playheadXContent - viewportWidth / 2;
+              }
+            });
+            return targetZoom;
+          }
+        });
+      }
     };
-    document.body.style.cursor = "row-resize";
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isResizing, timelineHeight]);
+  }, [duration, currentTime, viewportWidth, maxZoom]);
 
-  const t = translations[lang];
-
-  // Scroll wheel horizontal zoom centered on mouse cursor
+  // Ctrl + Wheel listener for horizontal timeline zooming
   useEffect(() => {
     const tracksDiv = timelineTracksRef.current;
     if (!tracksDiv) return;
 
     const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const zoomFactor = 1.05;
-      
-      const rect = tracksDiv.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left + tracksDiv.scrollLeft;
-      
-      setTimelineZoom(prev => {
-        let nextZoom;
+      if (e.ctrlKey) {
+        e.preventDefault();
         if (e.deltaY < 0) {
-          nextZoom = Math.min(20, prev * zoomFactor);
+          handleZoomChange(prev => prev * 1.10);
         } else {
-          nextZoom = Math.max(1, prev / zoomFactor);
+          handleZoomChange(prev => prev / 1.10);
         }
-        nextZoom = Math.round(nextZoom * 100) / 100;
-        
-        if (nextZoom !== prev) {
-          const ratio = nextZoom / prev;
-          const newScrollLeft = mouseX * ratio - (e.clientX - rect.left);
-          requestAnimationFrame(() => {
-            tracksDiv.scrollLeft = newScrollLeft;
-          });
-        }
-        
-        return nextZoom;
-      });
+      }
     };
 
     tracksDiv.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
       tracksDiv.removeEventListener('wheel', handleWheel);
     };
-  }, []);
+  }, [currentTime, duration, maxZoom]);
 
-  // Custom timeline dragging and resizing hook
+  // Setup movement blocks dragging & resizing
   const {
     dragInfo,
     tempTimes,
@@ -127,12 +245,10 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
     onUpdateMovementTimeRange,
     artists,
   });
-
-  // Custom audio waveform decoding and size metrics hook
   const {
     isDecoding,
     pathD,
-    waveformWidthPercent,
+    waveformWidthPercent: _waveformWidthPercent,
     playedWidth,
   } = useAudioWaveform({
     audioFileName,
@@ -141,215 +257,161 @@ export const FooterTimeline: React.FC<FooterTimelineProps> = ({
     duration,
     currentTime,
   });
+  const contentWidth = viewportWidth * timelineZoom;
+  const ticks = getTimelineTicks(duration, timelineZoom, viewportWidth, scrollLeft, formatTime);
+  const {
+    isScrubbing: _isScrubbing,
+    handleRulerPointerDown,
+    handleRulerPointerMove,
+    handleRulerPointerUp,
+    handlePlayheadHandlePointerDown,
+    handlePlayheadHandlePointerMove,
+    handlePlayheadHandlePointerUp,
+  } = useTimelineScrub({
+    onTimelineScrub,
+    duration,
+    timelineTracksRef,
+  });
+  const playheadLeftPx = (currentTime / duration) * contentWidth;
+  const waveformWidthPx = audioFileName && audioDuration > 0 
+    ? (audioDuration / duration) * contentWidth 
+    : contentWidth;
 
-  // Click on Column 2 track background to scrub playhead
-  const handleTracksClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const trackWidth = rect.width;
-    if (trackWidth <= 0) return;
-    const clickPercent = Math.max(0, Math.min(1, clickX / trackWidth));
-    onTimelineScrub(clickPercent * duration);
-  };
   return (
     <footer 
-      className="footer-timeline flex flex-col justify-between border-t border-white/5 shrink-0 select-none w-full bg-slate-950/40"
+      ref={footerRef}
+      className="footer-timeline flex flex-col border-t border-white/5 shrink-0 select-none w-full bg-slate-950/40 relative overflow-hidden"
       style={{ height: `${timelineHeight}px`, transition: isResizing ? "none" : "height 0.2s ease" }}
     >
-      {/* Resize handle at top */}
+      {/* Resize handle at very top */}
       <div
         onMouseDown={handleResizeMouseDown}
-        className={`w-full h-1.5 cursor-row-resize flex items-center justify-center shrink-0 transition-colors duration-150 ${
+        className={`w-full h-1.5 cursor-row-resize flex items-center justify-center shrink-0 transition-colors duration-150 z-45 ${
           isResizing ? "bg-indigo-500" : "hover:bg-indigo-500/30"
         }`}
-        title="Faites glisser pour redimensionner"
+        title="Faites glisser pour redimensionner la timeline"
       >
         <div className="w-10 h-0.5 rounded-full bg-slate-600" />
       </div>
-      <div className="flex items-center gap-4 px-4 py-2 border-b border-white/5 w-full bg-slate-950/10 h-[46px]">
-        {/* Time display on the left */}
-        <span 
-          className="text-xs font-mono text-slate-400 font-medium shrink-0 flex items-center gap-1"
-          style={{ width: '150px', fontVariantNumeric: 'tabular-nums' }}
-        >
-          <span className="text-indigo-400 font-bold">{formatTime(currentTime)}</span>
-          <span className="text-slate-600">/</span>
-          <span>{formatTime(duration)}</span>
-        </span>
+
+      {/* Main Timeline workspace */}
+      <div className="w-full flex-1 min-h-0 flex bg-slate-950/10 relative overflow-y-auto">
         
-        {/* Custom Waveform Scrubber Wrapper — full width */}
-        <div className="timeline-scrubber-wrapper flex-1 relative h-9 border border-white/5 bg-[#050608]">
-          {/* Visual Waveform Backing */}
+        {/* COLUMN 1: Fixed Headers and Performers Names */}
+        <PerformerNamesColumn
+          artists={artists}
+          currentTime={currentTime}
+          duration={duration}
+          audioFileName={audioFileName}
+          formatTime={formatTime}
+          onSelectArtist={onSelectArtist}
+        />
+
+        {/* COLUMN 2: Scrollable Tracks & Timeline Ruler */}
+        <div 
+          ref={timelineTracksRef}
+          className="flex-1 min-w-0 overflow-x-auto overflow-y-visible relative"
+        >
           <div 
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              bottom: 0,
-              width: audioFileName && audioDuration > 0 ? `${waveformWidthPercent}%` : '100%',
-              pointerEvents: 'none',
+            className="relative pb-2" 
+            style={{ width: `${contentWidth}px`, minWidth: '100%' }}
+            onDoubleClick={(e) => {
+              const target = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null) || (e.target as HTMLElement);
+              const track = target.closest('[data-timeline-track="true"]');
+              if (track) {
+                const artistId = track.getAttribute('data-artist-id');
+                if (artistId && onAddMovementAtTime) {
+                  const rect = track.getBoundingClientRect();
+                  const clickX = e.clientX - rect.left;
+                  const trackWidth = rect.width;
+                  if (trackWidth > 0) {
+                    const clickPercent = clickX / trackWidth;
+                    const clickedTime = clickPercent * duration;
+                    onAddMovementAtTime(artistId, clickedTime);
+                  }
+                }
+              }
             }}
           >
-            <svg 
-              viewBox="0 0 1000 100" 
-              preserveAspectRatio="none" 
-              style={{ width: '100%', height: '100%', display: 'block' }}
-            >
-              <defs>
-                <linearGradient id="waveform-grad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#6366f1" />
-                </linearGradient>
-                <clipPath id="waveform-clip">
-                  <rect x="0" y="0" width={playedWidth} height="100" />
-                </clipPath>
-              </defs>
-              
-              {/* Unplayed/Background waveform */}
-              <path 
-                d={pathD} 
-                fill="rgba(255, 255, 255, 0.08)" 
-              />
-              
-              {/* Played/Foreground waveform */}
-              <path 
-                d={pathD} 
-                fill="url(#waveform-grad)" 
-                clipPath="url(#waveform-clip)" 
-              />
-            </svg>
-            
-            {/* Decoding Overlay */}
-            {isDecoding && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-10 transition-all duration-300 animate-fade-in"
-                style={{ borderRadius: 'inherit' }}
-              >
-                <div className="flex items-center gap-2 text-[10px] font-bold text-cyan-300 font-mono tracking-widest animate-pulse">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                  <span>{lang === 'fr' ? "DÉCODAGE DE LA FORME D'ONDE..." : "DECODING WAVEFORM..."}</span>
-                </div>
-              </div>
-            )}
-          </div>
+            {/* Time Ruler & Vertical Grid Lines */}
+            <TimelineRuler
+              ticks={ticks}
+              duration={duration}
+              contentWidth={contentWidth}
+              onRulerPointerDown={handleRulerPointerDown}
+              onRulerPointerMove={handleRulerPointerMove}
+              onRulerPointerUp={handleRulerPointerUp}
+            />
 
-          {/* Visual Playhead Needle Line */}
-          <div 
-            className="absolute top-0 bottom-0 w-[2px] bg-cyan-400 z-10 pointer-events-none shadow-[0_0_8px_#06b6d4]"
-            style={{ left: `${(currentTime / duration) * 100}%` }}
-          />
- 
-          {/* Actual Range input mapped over the top */}
-          <input 
-            type="range"
-            min="0"
-            max={duration}
-            step="0.01"
-            value={currentTime}
-            onChange={(e) => onTimelineScrub(parseFloat(e.target.value))}
-            className="sequencer-scrubber"
-          />
+            {/* Scrollable Audio Track Waveform */}
+            <TimelineAudioWaveform
+              waveformWidthPx={waveformWidthPx}
+              playedWidth={playedWidth}
+              pathD={pathD}
+              isDecoding={isDecoding}
+              lang={lang}
+            />
+
+            {/* Playhead Indicator (Overlay) */}
+            <TimelinePlayhead
+              playheadLeftPx={playheadLeftPx}
+              onPlayheadPointerDown={handlePlayheadHandlePointerDown}
+              onPlayheadPointerMove={handlePlayheadHandlePointerMove}
+              onPlayheadPointerUp={handlePlayheadHandlePointerUp}
+            />
+
+            {/* Performer tracks stack */}
+            <TimelineTracks
+              artists={artists}
+              duration={duration}
+              contentWidth={contentWidth}
+              activeMovementId={activeMovementId}
+              dragInfo={dragInfo}
+              tempTimes={tempTimes}
+              onSelectArtist={onSelectArtist}
+              handleBlockPointerDown={handleBlockPointerDown}
+              handleBlockPointerMove={handleBlockPointerMove}
+              handleBlockPointerUp={handleBlockPointerUp}
+              noArtistsMessage={t.noArtistsOnStage}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Visual Timeline Blocks Track Overview */}
-      {(
-        <div className="w-full flex-1 min-h-0 overflow-y-auto flex px-4 py-1 animate-fade-in bg-slate-950/10">
-          
-          {/* Column 1: Performers Names list (outside scroll area) */}
-          <div className="w-36 flex flex-col gap-2 shrink-0 select-none border-r border-white/5 pr-3 pt-0.5">
-            {artists.map(artist => (
-              <div 
-                key={artist.id} 
-                className="h-6 flex items-center justify-end text-slate-400 text-[10px] font-bold font-mono tracking-tight text-right truncate hover:text-slate-200 transition shrink-0"
-                title={artist.name}
-              >
-                {artist.name}
-              </div>
-            ))}
-          </div>
-
-          {/* Column 2: Horizontal Scroll Container for tracks */}
-          <div 
-            ref={timelineTracksRef}
-            className="flex-1 min-w-0 overflow-x-auto overflow-y-visible"
-          >
-            <div 
-              className="flex-1 flex flex-col gap-2 relative cursor-col-resize" 
-              style={{ width: `${100 * timelineZoom}%`, minWidth: '100%' }}
-              onClick={handleTracksClick}
-            >
-              {/* Unified playhead needle inside scroll area */}
-              {artists.length > 0 && (
-                <div 
-                  className="absolute top-0 bottom-0 w-[2px] bg-indigo-500 z-20 pointer-events-none shadow-[0_0_10px_#6366f1]"
-                  style={{ left: `${(currentTime / duration) * 100}%` }}
-                />
-              )}
-
-              {artists.map(artist => (
-                <div key={artist.id} className="h-6 relative flex items-center shrink-0">
-                  {/* Track background & movement blocks */}
-                  <div className="w-full h-5 rounded-lg bg-[#050608]/60 border border-white/5 relative overflow-hidden shadow-inner">
-                    {artist.movements.map(mov => {
-                      const isDragged = dragInfo && dragInfo.movementId === mov.id;
-                      const displayStart = isDragged && tempTimes ? tempTimes.start : mov.startTime;
-                      const displayEnd = isDragged && tempTimes ? tempTimes.end : mov.endTime;
-
-                      const leftPercent = (displayStart / duration) * 100;
-                      const widthPercent = ((displayEnd - displayStart) / duration) * 100;
-
-                      const isSelected = activeMovementId === mov.id;
-
-                      return (
-                        <div
-                          key={mov.id}
-                          onPointerDown={(e) => handleBlockPointerDown(e, artist.id, mov)}
-                          onPointerMove={(e) => handleBlockPointerMove(e, artist.id, mov.id)}
-                          onPointerUp={(e) => handleBlockPointerUp(e, artist.id, mov.id)}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                          }}
-                          className={`absolute top-0.5 bottom-0.5 rounded-md border hover:border-white/20 transition-all shadow flex items-center justify-center text-[9px] font-bold text-white px-2.5 overflow-hidden select-none ${
-                            isSelected 
-                              ? 'border-white ring-2 ring-white/50 shadow-[0_0_12px_rgba(255,255,255,0.7)] z-10' 
-                              : 'border-white/10 opacity-90 hover:opacity-100'
-                          }`}
-                          style={{
-                            left: `${leftPercent}%`,
-                            width: `${widthPercent}%`,
-                            backgroundColor: artist.color,
-                            boxShadow: `inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.15)`,
-                            touchAction: 'none'
-                          }}
-                          title={`${artist.name}: ${displayStart.toFixed(2)}s - ${displayEnd.toFixed(2)}s`}
-                        >
-                          {/* Resize and drag handles cursors overlays */}
-                          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-20" />
-                          <div className="absolute left-2 right-2 top-0 bottom-0 cursor-grab active:cursor-grabbing" />
-                          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-20" />
-
-                          <span className="truncate filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)] select-none pointer-events-none">
-                            {displayStart.toFixed(1)}s - {displayEnd.toFixed(1)}s
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-
-              {artists.length === 0 && (
-                <div className="text-xs text-slate-500 italic text-center py-6 select-none w-full border border-dashed border-white/5 rounded-xl bg-slate-900/5">
-                  {t.noArtistsOnStage}
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
+      {/* Floating Zoom Controls */}
+      <div className="timeline-zoom-controls">
+        <span className="timeline-zoom-label">Zoom :</span>
+        <button 
+          onClick={() => handleZoomChange(prev => prev / 1.10)}
+          className="timeline-zoom-btn"
+          title="Dézoomer"
+        >
+          -
+        </button>
+        <input 
+          type="range" 
+          min="1" 
+          max={maxZoom} 
+          step="0.05"
+          value={timelineZoom} 
+          onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
+          className="timeline-zoom-slider"
+        />
+        <button 
+          onClick={() => handleZoomChange(prev => prev * 1.10)}
+          className="timeline-zoom-btn"
+          title="Zoomer"
+        >
+          +
+        </button>
+        <button 
+          onClick={() => handleZoomChange(1)}
+          className="timeline-zoom-fit-btn"
+          title="Ajuster à l'écran (100%)"
+        >
+          FIT
+        </button>
+      </div>
     </footer>
   );
 };

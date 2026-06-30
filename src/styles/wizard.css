@@ -1,0 +1,210 @@
+/* Project Wizard Styles */
+.wizard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(3, 4, 6, 0.85);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.wizard-card {
+  width: 550px;
+  max-height: 90vh;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(135deg, rgba(13, 17, 24, 0.9) 0%, rgba(9, 11, 16, 0.9) 100%);
+}
+
+.wizard-form-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  margin-bottom: 8px;
+  padding-right: 6px;
+}
+
+.wizard-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.wizard-logo {
+  font-size: 3rem;
+  margin-bottom: 8px;
+  display: inline-block;
+  animation: bounce 2s infinite;
+  filter: drop-shadow(0 0 12px var(--accent-glow));
+}
+
+.wizard-header h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(99, 102, 241, 0.3));
+}
+
+.wizard-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.wizard-steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.step-dot {
+  transition: all var(--transition-fast);
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+}
+
+.step-dot.active {
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+}
+
+.step-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0 12px;
+}
+
+.wizard-step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.step-title {
+  font-size: 1.25rem;
+  color: var(--text-primary);
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+  margin-bottom: 6px;
+}
+
+.wizard-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wizard-form-group label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.wizard-form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.wizard-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+
+/* Media Dropzone Setup */
+.media-dropzone {
+  border: 1.5px dashed rgba(255, 255, 255, 0.15);
+  background: rgba(6, 7, 10, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  box-shadow: inset 0 2px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.media-dropzone:hover {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, 0.03);
+  box-shadow: 
+    0 0 15px rgba(99, 102, 241, 0.08),
+    inset 0 2px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.media-dropzone.has-file {
+  border-style: solid;
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.03);
+  box-shadow: 
+    0 0 15px rgba(16, 185, 129, 0.08),
+    inset 0 2px 8px 0 rgba(0, 0, 0, 0.2);
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.dropzone-label {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.dropzone-icon {
+  font-size: 2rem;
+  filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.1));
+}
+
+.dropzone-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.clear-file-btn {
+  margin-top: 14px;
+  font-size: 0.7rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fda4af;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-weight: 600;
+}
+
+.clear-file-btn:hover {
+  background: var(--danger);
+  color: white;
+  box-shadow: 0 0 10px var(--danger-glow);
+}

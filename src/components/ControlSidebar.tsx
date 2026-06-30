@@ -61,7 +61,6 @@ interface ControlSidebarProps {
   // Keyframe Editor Callbacks
   onUpdateKeypointTime: (artistId: string, keypointId: string, newTime: number) => void;
   onUpdateKeypointPosition: (artistId: string, keypointId: string, position: Point) => void;
-  onToggleTransitionType: (artistId: string, movId: string) => void;
   onDeleteKeypoint: (artistId: string, keypointId: string) => void;
   onCreateKeypointAtCurrentTime: (artistId: string) => void;
 
@@ -74,16 +73,7 @@ interface ControlSidebarProps {
   setDrawTimeRange: (val: { start: number; end: number }) => void;
   isRecordingMode: boolean;
   setIsRecordingMode: (val: boolean) => void;
-  onCreateManualMovement: (
-    artistId: string,
-    startTime: number,
-    endTime: number,
-    targetX: number,
-    targetY: number,
-    transitionType: 'linear' | 'curved'
-  ) => void;
   onDeleteMovementPoint: (artistId: string, movId: string, pointIndex: number) => void; // kept in interface for compatibility
-  onUpdateMovementLabel?: (artistId: string, movementId: string, label: string) => void;
 }
 
 export const ControlSidebar: React.FC<ControlSidebarProps> = ({
@@ -122,7 +112,6 @@ export const ControlSidebar: React.FC<ControlSidebarProps> = ({
   onSelectArtist,
   onUpdateKeypointTime,
   onUpdateKeypointPosition,
-  onToggleTransitionType,
   onDeleteKeypoint,
   onCreateKeypointAtCurrentTime,
 
@@ -134,12 +123,10 @@ export const ControlSidebar: React.FC<ControlSidebarProps> = ({
   setDrawTimeRange,
   isRecordingMode,
   setIsRecordingMode,
-  onCreateManualMovement,
   onImportProject,
   onExportProject,
   lang,
   onLanguageChange,
-  onUpdateMovementLabel,
 }) => {
   const [width, setWidth] = useState<number>(() => {
     const saved = localStorage.getItem('stage_path_sidebar_width');
@@ -230,11 +217,6 @@ export const ControlSidebar: React.FC<ControlSidebarProps> = ({
             activeMovementId={activeMovementId}
             onSelectMovement={onSelectMovement}
             currentTime={currentTime}
-            onDeleteArtist={onDeleteArtist}
-            onUpdateArtistName={onUpdateArtistName}
-            onUpdateArtistColor={onUpdateArtistColor}
-            onUpdateArtistIcon={onUpdateArtistIcon}
-            onToggleArtistGroup={onToggleArtistGroup}
             isDrawingMode={isDrawingMode}
             setIsDrawingMode={setIsDrawingMode}
             drawModeType={drawModeType}
@@ -242,15 +224,11 @@ export const ControlSidebar: React.FC<ControlSidebarProps> = ({
             setDrawTimeRange={setDrawTimeRange}
             isRecordingMode={isRecordingMode}
             setIsRecordingMode={setIsRecordingMode}
-            onCreateManualMovement={onCreateManualMovement}
             onCreateKeypointAtCurrentTime={onCreateKeypointAtCurrentTime}
             onDeleteKeypoint={onDeleteKeypoint}
             onUpdateKeypointTime={onUpdateKeypointTime}
             onUpdateKeypointPosition={onUpdateKeypointPosition}
-            onToggleTransitionType={onToggleTransitionType}
             onTimelineScrub={onTimelineScrub}
-            onUpdateMovementLabel={onUpdateMovementLabel}
-            onToggleArtistPathVisibility={onToggleArtistPathVisibility}
           />
         )}
 

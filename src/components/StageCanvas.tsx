@@ -14,7 +14,7 @@ interface StageCanvasProps {
   onUpdateMovementControlPoint: (artistId: string, movId: string, position: Point) => void;
   isPlaying: boolean;
   onSelectArtist: (id: string) => void;
-  onDoubleClickStage?: (position: Point) => void;
+  onDoubleClickStage?: (position: Point, clientX?: number, clientY?: number) => void;
   placementArtistId: string | null;
   setPlacementArtistId: (id: string | null) => void;
 
@@ -56,6 +56,7 @@ interface StageCanvasProps {
   setIsPlaying: (playing: boolean) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onCreateMovementAtTime?: (artistId: string, time: number) => void;
 }
 
 export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
@@ -66,7 +67,6 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
     currentTime,
     isPlaying,
     isDrawingMode,
-    drawModeType,
     drawTimeRange,
     isRecordingMode,
   } = props;
@@ -83,10 +83,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
     isDragging,
     isDraggingMovPoint,
     hoverInfo,
-    vectorPoints,
-    vectorTransitionType,
-    setVectorTransitionType,
-    previewCursorPos,
+    isHoveringPlusBtn,
     isDrawingFreehand,
     freehandPointsRef,
     isRecordingInProgressRef,
@@ -95,7 +92,6 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
-    handleValidateVectorDrawing,
     handleCancelDrawing,
   } = useCanvasInteractions({
     ...props,
@@ -159,11 +155,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
         zoom,
         pan,
         bgImage,
-        vectorPoints,
-        vectorTransitionType,
-        previewCursorPos,
         isDrawingMode,
-        drawModeType,
         isDrawingFreehand,
         freehandPoints: freehandPointsRef.current,
         isRecordingMode,
@@ -172,6 +164,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
         recordingCurrentPos: recordingCurrentPosRef.current,
         hoverInfo,
         isPlaying,
+        isHoveringPlusBtn,
       });
     };
 
@@ -185,6 +178,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
       isDrawingFreehand || 
       isRecordingMode || 
       isRecordingInProgressRef.current || 
+      isHoveringPlusBtn ||
       !!hoverInfo;
 
     let animationFrameId: number;
@@ -213,15 +207,12 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
     isPanning,
     isDragging,
     isDraggingMovPoint,
-    vectorPoints,
-    vectorTransitionType,
-    previewCursorPos,
     isDrawingMode,
-    drawModeType,
     isDrawingFreehand,
     isRecordingMode,
     hoverInfo,
     isPlaying,
+    isHoveringPlusBtn,
   ]);
 
   return (
@@ -233,12 +224,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
 
       <DrawingHUD
         isDrawingMode={isDrawingMode}
-        drawModeType={drawModeType}
         drawTimeRange={drawTimeRange}
-        vectorTransitionType={vectorTransitionType}
-        setVectorTransitionType={setVectorTransitionType}
-        vectorPointsLength={vectorPoints.length}
-        onValidateVectorDrawing={handleValidateVectorDrawing}
         onCancelDrawing={handleCancelDrawing}
       />
 
@@ -255,7 +241,7 @@ export const StageCanvas: React.FC<StageCanvasProps> = (props) => {
         onPointerUp={handlePointerUp}
         onContextMenu={(e) => e.preventDefault()}
         style={{ 
-          cursor: isDrawingMode ? 'crosshair' : (isRecordingMode ? 'cell' : (hoverInfo ? 'pointer' : (isDraggingMovPoint || isDragging || isPanning ? 'grabbing' : 'grab'))),
+          cursor: isDrawingMode ? 'crosshair' : (isRecordingMode ? 'cell' : (hoverInfo || isHoveringPlusBtn ? 'pointer' : (isDraggingMovPoint || isDragging || isPanning ? 'grabbing' : 'grab'))),
           aspectRatio: `${project.stageWidth * 100 + wingsPadding * 2}/${project.stageHeight * 100 + wingsPadding * 2}`,
         }}
       />

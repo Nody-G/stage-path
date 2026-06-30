@@ -2,7 +2,6 @@ import React from 'react';
 import { Users } from 'lucide-react';
 import { Project, Point } from '../../types';
 import { getArtistPositionAtTime } from '../../utils/math';
-import { ArtistEditPanel } from './ArtistEditPanel';
 import { MovementCreatorPanel } from './MovementCreatorPanel';
 import { KeypointsManagerPanel } from './KeypointsManagerPanel';
 
@@ -12,11 +11,6 @@ interface MovementsTabProps {
   activeMovementId: string | null;
   onSelectMovement: (id: string | null) => void;
   currentTime: number;
-  onDeleteArtist: (id: string) => void;
-  onUpdateArtistName: (id: string, name: string) => void;
-  onUpdateArtistColor: (id: string, color: string) => void;
-  onUpdateArtistIcon: (id: string, icon: string | null) => void;
-  onToggleArtistGroup: (artistId: string, groupId: string) => void;
   isDrawingMode: boolean;
   setIsDrawingMode: (val: boolean) => void;
   drawModeType: 'freehand' | 'vector';
@@ -24,22 +18,11 @@ interface MovementsTabProps {
   setDrawTimeRange: (val: { start: number; end: number }) => void;
   isRecordingMode: boolean;
   setIsRecordingMode: (val: boolean) => void;
-  onCreateManualMovement: (
-    artistId: string,
-    startTime: number,
-    endTime: number,
-    targetX: number,
-    targetY: number,
-    transitionType: 'linear' | 'curved'
-  ) => void;
   onCreateKeypointAtCurrentTime: (artistId: string) => void;
   onDeleteKeypoint: (artistId: string, keypointId: string) => void;
   onUpdateKeypointTime: (artistId: string, keypointId: string, newTime: number) => void;
   onUpdateKeypointPosition: (artistId: string, keypointId: string, position: Point) => void;
-  onToggleTransitionType: (artistId: string, movId: string) => void;
   onTimelineScrub: (time: number) => void;
-  onUpdateMovementLabel?: (artistId: string, movementId: string, label: string) => void;
-  onToggleArtistPathVisibility: (artistId: string) => void;
 }
 
 export const MovementsTab: React.FC<MovementsTabProps> = ({
@@ -48,11 +31,6 @@ export const MovementsTab: React.FC<MovementsTabProps> = ({
   activeMovementId,
   onSelectMovement,
   currentTime,
-  onDeleteArtist,
-  onUpdateArtistName,
-  onUpdateArtistColor,
-  onUpdateArtistIcon,
-  onToggleArtistGroup,
   isDrawingMode,
   setIsDrawingMode,
   drawModeType,
@@ -60,15 +38,11 @@ export const MovementsTab: React.FC<MovementsTabProps> = ({
   setDrawTimeRange,
   isRecordingMode,
   setIsRecordingMode,
-  onCreateManualMovement,
   onCreateKeypointAtCurrentTime,
   onDeleteKeypoint,
   onUpdateKeypointTime,
   onUpdateKeypointPosition,
-  onToggleTransitionType,
   onTimelineScrub,
-  onUpdateMovementLabel,
-  onToggleArtistPathVisibility,
 }) => {
   const activeArtist = project.artists.find(art => art.id === activeArtistId) || null;
 
@@ -93,17 +67,6 @@ export const MovementsTab: React.FC<MovementsTabProps> = ({
     <div className="flex flex-col gap-4 animate-fade-in">
       <div className="flex flex-col gap-4">
         
-        <ArtistEditPanel
-          project={project}
-          activeArtistId={activeArtist.id}
-          onDeleteArtist={onDeleteArtist}
-          onUpdateArtistName={onUpdateArtistName}
-          onUpdateArtistColor={onUpdateArtistColor}
-          onUpdateArtistIcon={onUpdateArtistIcon}
-          onToggleArtistPathVisibility={onToggleArtistPathVisibility}
-          onToggleArtistGroup={onToggleArtistGroup}
-        />
-
         {/* Real-time Status Card */}
         <div className="realtime-status-card border-indigo-500/15" style={{ backgroundColor: 'rgba(99, 102, 241, 0.04)' }}>
           <div className="flex justify-between items-center mb-2">
@@ -143,7 +106,6 @@ export const MovementsTab: React.FC<MovementsTabProps> = ({
           setDrawTimeRange={setDrawTimeRange}
           isRecordingMode={isRecordingMode}
           setIsRecordingMode={setIsRecordingMode}
-          onCreateManualMovement={onCreateManualMovement}
         />
 
         {/* Keypoints Manager Panel */}
@@ -157,9 +119,7 @@ export const MovementsTab: React.FC<MovementsTabProps> = ({
           onDeleteKeypoint={onDeleteKeypoint}
           onUpdateKeypointTime={onUpdateKeypointTime}
           onUpdateKeypointPosition={onUpdateKeypointPosition}
-          onToggleTransitionType={onToggleTransitionType}
           onTimelineScrub={onTimelineScrub}
-          onUpdateMovementLabel={onUpdateMovementLabel}
         />
 
       </div>

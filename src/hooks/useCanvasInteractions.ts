@@ -12,7 +12,7 @@ interface UseCanvasInteractionsProps {
   onUpdateMovementControlPoint: (artistId: string, movId: string, position: Point) => void;
   isPlaying: boolean;
   onSelectArtist: (id: string) => void;
-  onDoubleClickStage?: (position: Point) => void;
+  onDoubleClickStage?: (position: Point, clientX?: number, clientY?: number) => void;
   placementArtistId: string | null;
   setPlacementArtistId: (id: string | null) => void;
 
@@ -54,6 +54,7 @@ interface UseCanvasInteractionsProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  onCreateMovementAtTime?: (artistId: string, time: number) => void;
 }
 
 export function useCanvasInteractions({
@@ -81,6 +82,7 @@ export function useCanvasInteractions({
   canvasRef,
   onDragStart,
   onDragEnd,
+  onCreateMovementAtTime,
 }: UseCanvasInteractionsProps) {
   const lastClickTimeRef = useRef<number>(0);
 
@@ -100,11 +102,8 @@ export function useCanvasInteractions({
   const [draggedMovId, setDraggedMovId] = useState<string | null>(null);
   const [draggedPointIndex, setDraggedPointIndex] = useState<number | null>(null);
   const [hoverInfo, setHoverInfo] = useState<{ movId: string; pointIdx: number } | null>(null);
+  const [isHoveringPlusBtn, setIsHoveringPlusBtn] = useState(false);
 
-  const [vectorPoints, setVectorPoints] = useState<Point[]>([]);
-  const [vectorTransitionType, setVectorTransitionType] = useState<'linear' | 'curved'>('curved');
-  const [previewCursorPos, setPreviewCursorPos] = useState<Point | null>(null);
-  
   const [isDrawingFreehand, setIsDrawingFreehand] = useState(false);
   const freehandPointsRef = useRef<Point[]>([]);
   
@@ -138,46 +137,23 @@ export function useCanvasInteractions({
     projectRef.current = project;
   }, [project]);
 
-  const handleValidateVectorDrawing = () => {
-    if (vectorPoints.length >= 2 && activeArtistId) {
-      onFinishDrawingPath(
-        activeArtistId,
-        drawTimeRange.start,
-        drawTimeRange.end,
-        vectorPoints,
-        vectorTransitionType
-      );
-    }
-    setVectorPoints([]);
-    setPreviewCursorPos(null);
-    setIsDrawingMode(false);
-  };
-
   const handleCancelDrawing = () => {
-    setVectorPoints([]);
-    setPreviewCursorPos(null);
     setIsDrawingMode(false);
   };
 
-  // Keyboard shortcut listener for vector drawing
+  // Keyboard shortcut listener for canceling drawing
   useEffect(() => {
-    if (!isDrawingMode || drawModeType !== 'vector') return;
+    if (!isDrawingMode) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        if (vectorPoints.length >= 2) {
-          handleValidateVectorDrawing();
-        }
-      } else if (e.key === 'Escape') {
+      if (e.key === 'Escape') {
         handleCancelDrawing();
-      } else if (e.key === 'Backspace' || e.key === 'Delete') {
-        setVectorPoints(prev => prev.slice(0, -1));
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDrawingMode, drawModeType, vectorPoints, vectorTransitionType, activeArtistId]);
+  }, [isDrawingMode]);
 
   // Native wheel event listener for zoom centered on mouse
   useEffect(() => {
@@ -271,7 +247,7 @@ export function useCanvasInteractions({
     
     // Intercept Double Click
     if (timeDiff < 280) {
-      handleManualDoubleClick(coords);
+      handleManualDoubleClick(coords, e.clientX, e.clientY);
       lastClickTimeRef.current = 0;
       return;
     }
@@ -279,15 +255,9 @@ export function useCanvasInteractions({
 
     // A. Intercept drawing modes
     if (isDrawingMode) {
-      if (drawModeType === 'vector') {
-        if (e.button === 0) {
-          setVectorPoints(prev => [...prev, coords]);
-        }
-      } else if (drawModeType === 'freehand') {
-        if (e.button === 0) {
-          setIsDrawingFreehand(true);
-          freehandPointsRef.current = [coords];
-        }
+      if (e.button === 0) {
+        setIsDrawingFreehand(true);
+        freehandPointsRef.current = [coords];
       }
       return;
     }
@@ -346,6 +316,27 @@ export function useCanvasInteractions({
       setPlacementArtistId(null);
       onSelectArtist(placementArtistId);
       return;
+    }
+
+    // D0. Hit test "+" button of selected artist to create a movement
+    if (activeArtistId && onCreateMovementAtTime) {
+      const activeArtist = artists.find(a => a.id === activeArtistId);
+      if (activeArtist && activeArtist.visible) {
+        const pos = getArtistPositionAtTime(activeArtist, currentTime, project.stageWidth, project.stageHeight);
+        const cs = !!project.settings?.constantScale;
+        const tokenScale = cs
+          ? 10 * (1 / zoom) * (project.settings?.constantScaleArtistSize ?? 1.0)
+          : 5 * (project.settings?.constantScaleArtistSize ?? 1.0);
+        const plusBtnCenter = {
+          x: pos.x + 18 * tokenScale,
+          y: pos.y - 18 * tokenScale
+        };
+        const plusBtnHitRadius = Math.max(12, 6 * tokenScale);
+        if (getDistance(coords, plusBtnCenter) < plusBtnHitRadius) {
+          onCreateMovementAtTime(activeArtistId, currentTime);
+          return;
+        }
+      }
     }
 
     // D. Hit test control point handles of selected artist
@@ -421,9 +412,7 @@ export function useCanvasInteractions({
     
     // A. Handle drawing previews
     if (isDrawingMode) {
-      if (drawModeType === 'vector') {
-        setPreviewCursorPos(coords);
-      } else if (drawModeType === 'freehand' && isDrawingFreehand) {
+      if (isDrawingFreehand) {
         const lastPt = freehandPointsRef.current[freehandPointsRef.current.length - 1];
         if (!lastPt || getDistance(coords, lastPt) > 3) {
           freehandPointsRef.current.push(coords);
@@ -475,22 +464,47 @@ export function useCanvasInteractions({
     if (!isDragging && !isDraggingMovPoint && !isPanning && activeArtistId) {
       const activeArtist = artists.find(a => a.id === activeArtistId);
       if (activeArtist) {
-        const hitRadius = Math.max(12, 10 / zoom);
-        let foundHover: { movId: string; pointIdx: number } | null = null;
+        // Check hover for "+" button
+        let hoveringPlus = false;
+        if (activeArtist.visible) {
+          const pos = getArtistPositionAtTime(activeArtist, currentTime, project.stageWidth, project.stageHeight);
+          const cs = !!project.settings?.constantScale;
+          const tokenScale = cs
+            ? 10 * (1 / zoom) * (project.settings?.constantScaleArtistSize ?? 1.0)
+            : 5 * (project.settings?.constantScaleArtistSize ?? 1.0);
+          const plusBtnCenter = {
+            x: pos.x + 18 * tokenScale,
+            y: pos.y - 18 * tokenScale
+          };
+          const plusBtnHitRadius = Math.max(12, 6 * tokenScale);
+          if (getDistance(coords, plusBtnCenter) < plusBtnHitRadius) {
+            hoveringPlus = true;
+          }
+        }
+        setIsHoveringPlusBtn(hoveringPlus);
 
-        activeArtist.movements.forEach(mov => {
-          mov.points.forEach((pt, idx) => {
-            if (getDistance(coords, pt) < hitRadius) {
-              foundHover = { movId: mov.id, pointIdx: idx };
-            }
+        if (!hoveringPlus) {
+          const hitRadius = Math.max(12, 10 / zoom);
+          let foundHover: { movId: string; pointIdx: number } | null = null;
+
+          activeArtist.movements.forEach(mov => {
+            mov.points.forEach((pt, idx) => {
+              if (getDistance(coords, pt) < hitRadius) {
+                foundHover = { movId: mov.id, pointIdx: idx };
+              }
+            });
           });
-        });
-        setHoverInfo(foundHover);
+          setHoverInfo(foundHover);
+        } else {
+          setHoverInfo(null);
+        }
       } else {
         setHoverInfo(null);
+        setIsHoveringPlusBtn(false);
       }
     } else {
       setHoverInfo(null);
+      setIsHoveringPlusBtn(false);
     }
   };
 
@@ -544,11 +558,30 @@ export function useCanvasInteractions({
     }
   };
 
-  const handleManualDoubleClick = (coords: Point) => {
+  const handleManualDoubleClick = (coords: Point, clientX?: number, clientY?: number) => {
     // A. Intercept trajectory spline addition on double-click
     if (activeArtistId) {
       const activeArtist = artists.find(a => a.id === activeArtistId);
       if (activeArtist) {
+        // First check: Did we double click an existing control point?
+        const hitRadius = Math.max(12, 10 / zoom);
+        let clickedMovId: string | null = null;
+        let clickedPtIdx: number | null = null;
+
+        activeArtist.movements.forEach(mov => {
+          mov.points.forEach((pt, idx) => {
+            if (getDistance(coords, pt) < hitRadius) {
+              clickedMovId = mov.id;
+              clickedPtIdx = idx;
+            }
+          });
+        });
+
+        if (clickedMovId !== null && clickedPtIdx !== null) {
+          onDeleteMovementPoint(activeArtistId, clickedMovId, clickedPtIdx);
+          return;
+        }
+
         let closestLutEntry: LUTEntry | null = null;
         let closestDist = Infinity;
         let closestMovId = '';
@@ -581,7 +614,7 @@ export function useCanvasInteractions({
     });
 
     if (!isNearArtist && onDoubleClickStage) {
-      onDoubleClickStage(coords);
+      onDoubleClickStage(coords, clientX, clientY);
     }
   };
 
@@ -592,11 +625,7 @@ export function useCanvasInteractions({
     isDragging,
     isDraggingMovPoint,
     hoverInfo,
-    vectorPoints,
-    setVectorPoints,
-    vectorTransitionType,
-    setVectorTransitionType,
-    previewCursorPos,
+    isHoveringPlusBtn,
     isDrawingFreehand,
     freehandPointsRef,
     isRecordingInProgressRef,
@@ -608,7 +637,6 @@ export function useCanvasInteractions({
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
-    handleValidateVectorDrawing,
     handleCancelDrawing
   };
 }
