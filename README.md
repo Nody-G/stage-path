@@ -1,6 +1,6 @@
 # 🎭 Stage-Path
 
-**Stage-Path** est une application web moderne et performante de planification scénique et de tracé de trajectoires pour le spectacle vivant (théâtre, opéra, danse, reconstitutions historiques comme *Kynren* ou *Land of the Vikings*).
+**Stage-Path** est une application web moderne et performante de planification scénique et de tracé de trajectoires pour le spectacle vivant (théâtre, opéra, danse, reconstitutions historiques..
 
 Conçue avec **React 18**, **TypeScript** et **Vite**, elle offre un contrôle précis et fluide sur les figurants, leurs déplacements et la scénographie physique de la scène.
 
